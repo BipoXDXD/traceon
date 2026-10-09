@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Menor privilégio: os jobs só leem o repositório. Quem precisar de mais declara no próprio job.
+permissions:
+  contents: read
+
+# Uma execução por ref: um push novo cancela a anterior ainda em andamento.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  backend:
+    name: Backend (build, format e testes)
+    # Versão fixa do runner: ubuntu-latest muda de imagem sem aviso. Docker já vem instalado
+    # na imagem (Docker 28.0.4 no Ubuntu 24.04), necessário para o Testcontainers.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar o SDK do .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # Não existe packages.lock.json, então o cache do setup-dotnet não serve. A chave
+      # usa os arquivos que definem as versões (central package management + csproj).
+      - name: Cache do NuGet
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'backend/Directory.Packages.props', 'backend/Directory.Build.props', 'backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore backend/Traceon.slnx
+
+      - name: Verificar formatação
+        run: dotnet format backend/Traceon.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build backend/Traceon.slnx -c Release --no-restore
+
+      - name: Testes
+        run: >
+          dotnet test --solution backend/Traceon.slnx -c Release --no-build
+          --report-xunit-trx --results-directory "$GITHUB_WORKSPACE/TestResults"
+
+      - name: Publicar resultados dos testes
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-test-results
+          path: TestResults/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend (lint, tipos, testes e build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar o Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Testes
+        env:
+          CI: "true"
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  secrets:
+    name: Segredos (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      # Binário oficial com versão e checksum fixos, em vez de gitleaks/gitleaks-action:
+      # a action exige GITLEAKS_LICENSE em repositórios de organização, e o binário (MIT)
+      # roda igual em qualquer dono, sem segredo nenhum. O sha256 vem do arquivo
+      # gitleaks_8.30.1_checksums.txt da release.
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - name: Checkout com o histórico completo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Instalar o gitleaks
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/gitleaks" gitleaks
+
+      - name: Procurar segredos no histórico
+        # --redact: o valor do segredo não vai para o log público da execução.
+        run: '"$RUNNER_TEMP/gitleaks/gitleaks" git --redact --no-banner --exit-code 1 .'

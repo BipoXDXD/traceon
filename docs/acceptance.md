@@ -75,7 +75,7 @@ Verificado em 2026-10-09 com Temurin 25.0.4 e Maven 3.9.16 (wrapper).
 Verificado em 2026-10-09: `./mvnw clean verify` com 15 testes rápidos (`*Test`) e 32 de integração (`*IT`,
 PostgreSQL 18.6 via Testcontainers), Spotless, `-Werror` e `dependency:analyze` verdes. Spectral local (mesmas
 versões da CI) sem avisos na spec gerada pelo Java. API Java contra o PostgreSQL do Compose: `/health/ready` 200.
-CI ainda não executada.
+CI do PR #6 (run 37943341119): os 5 jobs passaram, inclusive o `backend-java` com os testes de integração e o drift.
 
 | Testes .NET | Equivalente Java |
 |---|---|

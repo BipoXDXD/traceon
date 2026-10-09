@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Traceon.Application\Traceon.Application.csproj" />
+    <ProjectReference Include="..\Traceon.Domain\Traceon.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

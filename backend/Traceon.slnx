@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Traceon.Api/Traceon.Api.csproj" />
+    <Project Path="src/Traceon.Application/Traceon.Application.csproj" />
+    <Project Path="src/Traceon.Domain/Traceon.Domain.csproj" />
+    <Project Path="src/Traceon.Infrastructure/Traceon.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Traceon.IntegrationTests/Traceon.IntegrationTests.csproj" />
+    <Project Path="tests/Traceon.UnitTests/Traceon.UnitTests.csproj" />
+  </Folder>
+</Solution>

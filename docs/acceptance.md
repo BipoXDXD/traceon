@@ -56,6 +56,20 @@ Critérios adicionais da rodada de regras de API, design e segurança. Não vêm
 | Dependabot validado pelo GitHub | Atendido | Abriu os PRs #1 (npm) e #2 (NuGet) em 2026-10-09; o #2 passou na CI e o #1 caiu no teste intermitente corrigido em `StartupConfigurationTests` |
 | Modelo de ameaças com teste por mitigação | Atendido | [security/threat-model.md](security/threat-model.md): 19 ameaças, cada uma com teste, passo de CI, "sem teste — pendente" ou risco aceito |
 
+## Migração para Java, fase 1 (esqueleto)
+
+Branch `feat/backend-java` ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), plano seção 6).
+Verificado em 2026-10-09 com Temurin 25.0.4 e Maven 3.9.16 (wrapper).
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Projeto Maven com parent Boot 4.1.1, Java 25 e wrapper | Atendido | `./mvnw verify`: BUILD SUCCESS; o jar sobe (`Started TraceonApplication in 0.544 seconds`) |
+| Zero aviso do compilador | Atendido | `-Xlint:all` + `failOnWarning`; um raw type temporário derrubou a compilação (`warnings found and -Werror specified`) |
+| Formatador em modo `check` | Atendido | `spotless:check` no `verify` acusou violação antes do `spotless:apply` |
+| Dependências declaradas = usadas | Atendido | `dependency:analyze-only` falhou com `spring-context` usado e não declarado; corrigido declarando |
+| Regra da dependência e fronteira de módulos desde o primeiro commit | Atendido | `ArchitectureTest` (4) e `ModularityTest` (1) verdes; com classes de violação temporárias, os 5 falharam |
+| Job `backend-java` na CI | **Pendente** | Adicionado ao `ci.yml`; ainda não executado no GitHub (branch não publicada) |
+
 ## Verificações pendentes (não executadas)
 
 | Item | Status | Motivo e próximo passo |

@@ -198,6 +198,22 @@ Cada fase termina com CI verde e commits pequenos. Os nomes de teste em Java seg
    desde o primeiro commit.
 4. Job `backend` da CI trocado: `actions/setup-java` (Temurin 25, por SHA), `./mvnw verify`, drift da spec.
 
+**Execução (2026-10-09), branch `feat/backend-java`:**
+
+- `backend/pom.xml` (parent 4.1.1, Java 25), wrapper Maven 3.9.16 com `distributionSha256Sum` (só o script
+  `mvnw`; o `mvnw.cmd` saiu, o projeto não roda em Windows). Pacote raiz `bipo.tech.traceon`.
+- Formatador: **Spotless + Palantir Java Format** (2.99.0), 120 colunas, como os docs; `spotless:check` no `verify`
+  e `./mvnw spotless:apply` para corrigir.
+- `dependency:analyze-only` com `failOnWarning` no `verify`: o código declara o que usa (`spring-boot`,
+  `spring-boot-autoconfigure`, `spring-context`); só starters e a engine do ArchUnit ficam na lista de ignorados.
+- `ArchitectureTest` (4 regras: pacote de módulo planejado, `domain` → nada, `application` → só `domain`,
+  `infrastructure` sem `api` nem web/servlet) e `ModularityTest` (`ApplicationModules.verify()`). Cada regra foi
+  vista falhando com uma violação temporária, depois removida.
+- **Desvios:** os pacotes `health` e `shared` não foram criados ainda, porque o prompt mestre proíbe pacote vazio;
+  entram na fase 2 com o comportamento. O job .NET `backend` **não** foi trocado: o job novo `backend-java` roda ao
+  lado dele até o corte (fase 3), para a paridade ser provada na CI com as duas suítes. O drift da spec continua no
+  job .NET até o Java gerar a spec (fase 2).
+
 ### Fase 2: paridade da Foundation
 
 Cada item porta o comportamento **e** o teste correspondente. O teste vem primeiro e é visto falhando.

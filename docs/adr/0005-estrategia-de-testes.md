@@ -54,7 +54,8 @@ NetArchTest) ou leitura dos `.csproj`.
 - A regra da dependência cobre referências de projeto e pacote, não `using` entre namespaces dentro de um projeto; essa
   lacuna é aceita até haver módulos (a fronteira entre módulos precisará de outro teste, no ADR da etapa 2).
 - Não há medição de cobertura nem mutation testing; avaliar quando houver regra de negócio.
-- Ainda não há teste de uma exceção não tratada (500): pendente em `docs/acceptance.md`.
+- A exceção não tratada (500) é testada com um `HealthCheckService` que lança, sem rota de teste na API
+  (`UnhandledExceptionTests`, ADR 0007).
 
 ## Compliance
 

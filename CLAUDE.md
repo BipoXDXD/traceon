@@ -32,7 +32,13 @@ gráficos ou de componentes. Autenticação improvisada. Tag `latest` e atualiza
 ## Segurança
 
 - Nenhuma credencial no código, logs ou bundle. Segredos em `.env` (Compose) e User Secrets/variáveis de ambiente.
-- Respostas de erro e health sem detalhe interno (allowlist de campos). OpenAPI só em Development.
+- Respostas de erro e health sem detalhe interno (allowlist de campos). `/openapi/v1.json` só em Development.
+- Rota nova passa pelo `RouteInventoryTests` (allowlist pública explícita); health só aceita GET (405 nos demais).
+- **Contrato:** o build regrava `docs/api/openapi.json`; mudou endpoint, DTO ou resposta → commite a spec junto
+  (a CI barra o drift). Lint: Spectral + OWASP (comando no README e na CI; `.spectral.yaml` com motivo por regra
+  desligada). Não desligue regra sem motivo e etapa de retorno.
+- **Ameaças:** feature com dado pessoal, permissão, dinheiro ou URL do usuário atualiza
+  `docs/security/threat-model.md` (ameaça → mitigação → nome do teste) antes de implementar (ADR 0007).
 - CORS não é liberado: o frontend usa proxy do Vite. Antes de qualquer coleta externa: autorização do site,
   modelo de ameaças e controles de SSRF (DNS, redirecionamentos, sub-recursos) na aplicação e na rede.
 
@@ -62,4 +68,5 @@ Connection string: `dotnet user-secrets set "ConnectionStrings:Traceon" "<valor>
 ## Documentação (`docs/`)
 
 `architecture.md` · `acceptance.md` (critérios e pendências) · `progress.md` · `references.md` (20 livros,
-status de acesso) · `adr/0001`–`0006`. Atualize `acceptance.md` e `progress.md` ao concluir cada incremento.
+status de acesso) · `security/threat-model.md` · `api/openapi.json` (gerado) · `adr/0001`–`0007`.
+Atualize `acceptance.md` e `progress.md` ao concluir cada incremento.

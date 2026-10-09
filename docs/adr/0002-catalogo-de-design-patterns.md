@@ -23,8 +23,8 @@ classes antes da hora.
 | **Composition Root + injeção por construtor** | Um único lugar conhece as implementações | `Program.cs` + `AddInfrastructure(...)`; primary constructors; `ValidateScopes` e `ValidateOnBuild` ligados |
 | **Options tipadas com validação no boot** | Config ausente derruba o app na partida, não na primeira requisição | `AddOptions<T>().Bind(...).ValidateOnStart()` |
 | **Unit of Work** | Uma transação por caso de uso | O próprio `DbContext` (`SaveChangesAsync` uma vez); **sem** UoW nem repositório genérico próprio |
-| **Health Check (liveness × readiness)** | Distinguir processo vivo de app pronta (banco alcançável) | `MapHealthChecks` com filtro por tag; readiness com timeout |
-| **Problem Details** | Erro consistente, sem detalhe interno | `AddProblemDetails` + `UseExceptionHandler` + `UseStatusCodePages`; `IExceptionHandler` só quando houver exceção de domínio a mapear |
+| **Health Check (liveness × readiness)** | Distinguir processo vivo de app pronta (banco alcançável) | `MapGet` (só GET) sobre `HealthCheckService`, readiness filtrada pela tag `ready` e com timeout; DTOs de resposta por allowlist (ADR 0004, ADR 0007) |
+| **Problem Details** | Erro consistente, sem detalhe interno | `AddProblemDetails` + `UseExceptionHandler` + `UseStatusCodePages` (404, 405 e 500 genéricos, com `traceId` no 500); `IExceptionHandler` só quando houver exceção de domínio a mapear |
 
 ### Domínio (a partir da etapa 2)
 

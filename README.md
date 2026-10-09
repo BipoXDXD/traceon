@@ -29,6 +29,7 @@ Não há autenticação, sites, verificações nem endpoints de negócio. Detalh
 | Testes backend | xunit.v3 (Microsoft.Testing.Platform), Testcontainers.PostgreSql | 4.0.1, 4.15.0 |
 | Testes frontend | Vitest, Testing Library, jsdom | 5.0.1, 16.3.3, 30.1.1 |
 | CI | GitHub Actions (`ubuntu-24.04`), gitleaks | 8.30.1 |
+| Contrato | OpenAPI gerado no build (`Microsoft.Extensions.ApiDescription.Server`); Spectral + ruleset OWASP | 10.0.12; 6.16.3 + 2.0.1 |
 
 Política de versões e motivos: [ADR 0003](docs/adr/0003-stack-e-politica-de-versoes.md). Azure é etapa
 posterior e **nada é provisionado** nesta fase.
@@ -44,7 +45,9 @@ posterior e **nada é provisionado** nesta fase.
 │   ├── Directory.Packages.props     # versões centralizadas dos pacotes NuGet
 │   └── Traceon.slnx
 ├── frontend/                        # React + TypeScript + Vite (veja frontend/README.md)
-├── docs/                            # arquitetura, aceite, progresso, referências e ADRs
+├── docs/                            # arquitetura, aceite, progresso, referências, ADRs e modelo de ameaças
+│   └── api/openapi.json             # spec OpenAPI gerada pelo build e versionada
+├── .spectral.yaml                   # lint da spec (Spectral + OWASP)
 ├── .github/                         # workflow de CI e Dependabot
 ├── compose.yaml                     # PostgreSQL local
 ├── .env.example                     # variáveis do Docker Compose
@@ -102,10 +105,33 @@ Os únicos endpoints desta etapa. Sem autenticação, para que um orquestrador p
 
 - Os corpos só trazem status e o nome do check; nunca mensagem, exceção, duração, host ou porta.
 - As duas respostas são `application/json` com `Cache-Control: no-store`.
-- Rota inexistente responde `404` em `application/problem+json`, sem detalhe interno.
-- O documento OpenAPI (`/openapi/v1.json`) só existe em `Development`.
+- Só `GET`: `POST`, `PUT` e `DELETE` respondem `405` em `application/problem+json` com `Allow: GET`.
+- Rota inexistente responde `404` em `application/problem+json`, sem detalhe interno. Exceção não tratada responde
+  `500` genérico, com `traceId` (o mesmo id vai para o log) e sem stack trace.
+- Toda resposta, inclusive erro, leva `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+  `X-Frame-Options: DENY` e `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`.
+- O documento OpenAPI servido em `/openapi/v1.json` só existe em `Development`.
 
-Racional: [ADR 0004](docs/adr/0004-health-checks-liveness-e-readiness.md).
+Racional: [ADR 0004](docs/adr/0004-health-checks-liveness-e-readiness.md) e
+[ADR 0007](docs/adr/0007-convencoes-de-api-e-seguranca-da-foundation.md).
+
+## OpenAPI
+
+A spec da API fica em [`docs/api/openapi.json`](docs/api/openapi.json). O build da API (`dotnet build`) a **regrava**
+a partir do código; ela é versionada, então **quem muda o contrato commita a spec junto**. A CI falha se a spec
+commitada divergir da gerada. O build não precisa de banco nem de connection string.
+
+Lint local, com o mesmo comando da CI (Node 24; baixa as duas versões exatas via `npx`):
+
+```bash
+npx --yes \
+  -p "@stoplight/spectral-cli@6.16.3" \
+  -p "@stoplight/spectral-owasp-ruleset@2.0.1" \
+  -c 'NODE_PATH="${PATH%%/.bin:*}" spectral lint docs/api/openapi.json --fail-severity=warn'
+```
+
+As regras vêm de [`.spectral.yaml`](.spectral.yaml); cada regra desligada tem o motivo e a etapa em que volta. As
+versões do Spectral ficam no workflow e **não** são atualizadas pelo Dependabot.
 
 ## Variáveis de ambiente e configuração
 
@@ -125,7 +151,7 @@ frontend ([ADR 0006](docs/adr/0006-integracao-frontend-proxy-e-configuracao.md))
 ## Testes, lint e formatação
 
 ```bash
-# Backend (25 testes: 8 de unidade/arquitetura, 17 de integração com PostgreSQL real via Testcontainers)
+# Backend (44 testes: 8 de unidade/arquitetura, 36 de integração com PostgreSQL real via Testcontainers)
 dotnet build backend/Traceon.slnx
 dotnet test --solution backend/Traceon.slnx
 dotnet format backend/Traceon.slnx --verify-no-changes
@@ -144,8 +170,9 @@ Os critérios de aceite e o que ainda está pendente estão em [docs/acceptance.
 
 ## CI
 
-`.github/workflows/ci.yml` define três jobs: **backend** (restore, `dotnet format --verify-no-changes`, build
-Release, testes), **frontend** (lint, typecheck, testes, build) e **secrets** (gitleaks 8.30.1 com checksum
+`.github/workflows/ci.yml` define quatro jobs: **backend** (restore, `dotnet format --verify-no-changes`, build
+Release, verificação de drift da spec OpenAPI, testes), **frontend** (lint, typecheck, testes, build), **api-spec**
+(Spectral + ruleset OWASP sobre `docs/api/openapi.json`) e **secrets** (gitleaks 8.30.1 com checksum
 sobre o histórico completo). As actions estão fixadas por SHA. O Dependabot (`.github/dependabot.yml`) cobre
 NuGet, npm, GitHub Actions e imagens do Compose, sem atualizar versões principais.
 
@@ -171,6 +198,8 @@ estão configurados, mas não validados.
 - [docs/architecture.md](docs/architecture.md): camadas, módulos, fluxo de health e decisões de configuração
 - [docs/acceptance.md](docs/acceptance.md): critérios de aceite da Foundation com evidências e pendências
 - [docs/progress.md](docs/progress.md): etapas e próximo incremento
+- [docs/security/threat-model.md](docs/security/threat-model.md): modelo de ameaças (ameaça, mitigação, teste)
+- [docs/api/openapi.json](docs/api/openapi.json): spec OpenAPI gerada pelo build
 - [docs/references.md](docs/references.md): bibliografia (20 livros) e seu papel
 - [docs/prompt-mestre.md](docs/prompt-mestre.md): escopo e regras do projeto
 - ADRs: [0001](docs/adr/0001-clean-architecture-monolito-modular.md) arquitetura,
@@ -178,4 +207,5 @@ estão configurados, mas não validados.
   [0003](docs/adr/0003-stack-e-politica-de-versoes.md) stack e versões,
   [0004](docs/adr/0004-health-checks-liveness-e-readiness.md) health checks,
   [0005](docs/adr/0005-estrategia-de-testes.md) testes,
-  [0006](docs/adr/0006-integracao-frontend-proxy-e-configuracao.md) frontend e configuração
+  [0006](docs/adr/0006-integracao-frontend-proxy-e-configuracao.md) frontend e configuração,
+  [0007](docs/adr/0007-convencoes-de-api-e-seguranca-da-foundation.md) convenções de API e segurança

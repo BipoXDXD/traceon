@@ -20,19 +20,29 @@ Alternativas para a sonda de readiness:
 Alternativas para o corpo da resposta: writer padrão do ASP.NET Core (texto), JSON com tudo
 (`descriptions`, `exception`, `data`, duração) ou JSON por allowlist.
 
+Alternativas para expor as rotas: `MapHealthChecks` com `ResponseWriter` próprio (desenho original deste ADR) ou
+`MapGet` que consulta o `HealthCheckService` e devolve DTOs tipados. A segunda foi adotada em 2026-10-09 porque
+método, tipos de resposta e `operationId` passam a ser metadados do endpoint, documentados no OpenAPI e enxergados pelo
+inventário de rotas ([ADR 0007](0007-convencoes-de-api-e-seguranca-da-foundation.md)).
+
 ## Decisão
 
-- **`/health/live`**: nenhuma verificação (`Predicate = _ => false`). Responde `200 {"status":"Healthy"}` se o
+- **Endpoints**: dois `MapGet` no grupo `/health` (`getLiveness`, `getReadiness`), cada um consultando o
+  `HealthCheckService` e devolvendo um DTO. **Só `GET`**: `POST`, `PUT` e `DELETE` respondem `405` em Problem Details
+  com `Allow: GET`.
+- **`/health/live`**: nenhuma verificação (`CheckHealthAsync(_ => false)`). Responde `200 {"status":"Healthy"}` se o
   processo atende. Um banco indisponível não deve levar um orquestrador a reiniciar um processo saudável, e reiniciar
   não repara o banco.
 - **`/health/ready`**: roda os checks com a tag `ready` (hoje, `database`). `Healthy` e `Degraded` → `200`;
-  `Unhealthy` → `503`. Corpo: `{"status":"...","checks":[{"name":"database","status":"..."}]}`.
+  `Unhealthy` → `503` (mapeamento feito no endpoint). Corpo: `{"status":"...","checks":[{"name":"database","status":"..."}]}`,
+  com o status serializado como string.
 - **Sonda (opção C)**: `DatabaseHealthCheck` abre uma conexão real sem pool e com timeout de 3 s
   (`DatabaseHealthCheck.Timeout`), registrada com esse mesmo timeout no serviço de health checks. As conexões da
   aplicação mantêm a configuração do operador.
-- **Allowlist na resposta**: só o status geral e, por check, nome e status. Nunca descrição, exceção, duração,
-  `data`, host, porta, usuário nem trecho da connection string. Cabeçalhos: `application/json` e
-  `Cache-Control: no-store`.
+- **Allowlist na resposta**: os DTOs `LivenessResponse`, `ReadinessResponse` e `CheckResponse` só têm o status geral e,
+  por check, nome e status. Nunca descrição, exceção, duração, `data`, host, porta, usuário nem trecho da connection
+  string. Cabeçalhos: `application/json` e `Cache-Control: no-store` (filtro do grupo `/health`, documentado na spec).
+  Os headers de segurança vêm do pipeline (ADR 0007).
 - **Sem autenticação**, para que o orquestrador e o proxy consultem; por isso o corpo é mínimo.
 - Contrato consumido pelo frontend: o nome `database` e os valores `Healthy`/`Unhealthy` fazem parte dele; mudá-los
   é mudança de contrato.
@@ -45,7 +55,10 @@ Alternativas para o corpo da resposta: writer padrão do ASP.NET Core (texto), J
 - O 503 demora até 3 s no pior caso (banco mudo); a recusa de conexão responde de imediato.
 - Qualquer novo check de readiness só entra se for interno ao sistema; dependência opcional ou de terceiros não
   entra (evita derrubar a readiness por algo que o app tolera).
-- Sem rate limit nem autenticação, os endpoints podem ser usados para forçar conexões ao banco; avaliar na etapa 2.
+- Sem rate limit nem autenticação, os endpoints podem ser usados para forçar conexões ao banco. **Risco aceito na
+  Foundation** (limite atual: timeout de 3 s); decisão pendente nas etapas 2 e 6 (risco R1 em
+  [threat-model.md](../security/threat-model.md)). As regras OWASP de rate limit do Spectral estão desligadas só para
+  estes dois paths por esse motivo.
 
 ## Compliance
 
@@ -53,8 +66,13 @@ Testes de integração (`HealthEndpointTests`, PostgreSQL real e banco falso que
 
 - liveness `200` com banco disponível, recusando conexões e mudo;
 - readiness `200` com banco disponível; `503` em até 10 s (margem de CI) com banco recusando e mudo;
-- corpo exato e ausência do canário da senha, da porta, de `Host=`, `Exception`, `Npgsql` e ` at `;
-- `application/json` e `Cache-Control: no-store` nas duas rotas.
+- corpo exato e ausência do canário da senha, da porta, de `Host=`, `Exception`, `Npgsql` e ` at `
+  (`Ready_returns_503_unhealthy_promptly_when_database_is_unreachable`);
+- a senha nunca aparece no log da falha (`Ready_failure_logs_never_contain_the_database_password`);
+- `application/json` e `Cache-Control: no-store` nas duas rotas (`Health_responses_are_uncacheable_json`);
+- `POST`, `PUT` e `DELETE` → `405` `application/problem+json` com `Allow: GET`
+  (`Health_endpoints_reject_other_methods_with_405_problem_details`);
+- spec e inventário de rotas: `OpenApiDocumentTests` e `RouteInventoryTests` (ADR 0007).
 
 ## Referências
 

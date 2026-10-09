@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+coverage/
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
+
+# Ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# IDEs e ferramentas locais
+.idea/
+.vs/
+.vscode/
+riderModule.iml
+/_ReSharper.Caches/
+.serena/
+.DS_Store
+
+# Saídas locais do Playwright MCP
+.playwright-mcp/

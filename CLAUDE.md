@@ -7,7 +7,7 @@ qualquer outro texto). Execução local, endpoints e variáveis: `README.md`. N�
 
 - Etapa 1 (Foundation) concluída; etapa 2 (Identity & Sites) autorizada, decisões no ADR 0008 (`docs/progress.md`).
 - **Backend migrado para Java 25 + Spring Boot 4.1.1** (ADR 0009, `docs/planejamento-migracao-java.md`), verificado
-  ponta a ponta; aguarda merge (PRs #5 e #6). A etapa 2 recomeça em Java depois dele. Faça **só a etapa autorizada**: as seguintes são
+  ponta a ponta e mesclado na `main` (#4, #5 e #6). A etapa 2 recomeça em Java. Faça **só a etapa autorizada**: as seguintes são
   roteiro, não autorização.
 - **Azure: não provisionar, alterar nem excluir nada.** Sem Kubernetes, AKS, manifests ou Helm.
 - Sem cobrança, integração com plataformas de e-commerce nem bloqueio automático no MVP.

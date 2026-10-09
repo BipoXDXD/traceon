@@ -9,7 +9,7 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 |---|---|---|
 | 1. Foundation | Concluída em 2026-10-09 | API, PostgreSQL local, frontend integrado, testes e CI executada no GitHub (os 4 jobs passaram). Pendente só a revisão das ADRs pelo responsável (veja [acceptance.md](acceptance.md)) |
 | 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); STRIDE escrito (ameaças 20 a 37, testes planejados); próximo passo: contrato OpenAPI, ainda sem código |
-| Migração do backend para Java | Concluída localmente em 2026-10-09; aguarda revisão e merge | Aprovada em 2026-10-09 ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), [plano](planejamento-migracao-java.md)). Fase 0 no PR #5; fases 1 a 4 na branch `feat/backend-java` (PR #6), com CI verde e verificação ponta a ponta no navegador. Contrato da etapa 2 revisado no PR #3. A etapa 2 recomeça em Java depois do merge, pelo tracer bullet planejado |
+| Migração do backend para Java | Concluída em 2026-10-09 | Aprovada e executada em 2026-10-09 ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), [plano](planejamento-migracao-java.md)): planejamento (#4), fase 0 (#5) e fases 1 a 4 (#6) mesclados na `main`, com a CI verde. Contrato da etapa 2 revisado no PR #3, aguardando revisão. A etapa 2 recomeça em Java pelo tracer bullet planejado |
 | 3. Monitoring | Não iniciada | Depende da etapa 2 (sites com controle comprovado) |
 | 4. Integrity | Não iniciada | Depende da etapa 3 |
 | 5. Findings & Notifications | Não iniciada | Depende da etapa 4 |

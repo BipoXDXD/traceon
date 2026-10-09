@@ -56,18 +56,6 @@ jobs:
       - name: Build
         run: dotnet build backend/Traceon.slnx -c Release --no-restore
 
-      # O build da API regrava docs/api/openapi.json (Microsoft.Extensions.ApiDescription.Server), sem
-      # connection string nem banco. Diferença aqui quer dizer contrato alterado sem a spec commitada junto:
-      # rode o build localmente e commite docs/api.
-      - name: Verificar drift da spec OpenAPI
-        run: |
-          git diff --exit-code -- docs/api
-          untracked="$(git ls-files --others --exclude-standard -- docs/api)"
-          if [ -n "$untracked" ]; then
-            echo "::error::Spec gerada e não versionada em docs/api: $untracked"
-            exit 1
-          fi
-
       - name: Testes
         run: >
           dotnet test --solution backend/Traceon.slnx -c Release --no-build
@@ -83,7 +71,7 @@ jobs:
           retention-days: 14
 
   # Migração para Java (ADR 0009): convive com o job .NET acima até o corte da fase 3, quando assume o nome
-  # "backend" e o drift da spec.
+  # "backend". Desde a fase 2 é dono da spec: o OpenApiDocumentIT falha se docs/api/openapi.json divergir da gerada.
   backend-java:
     name: Backend Java (formatação, build, análise de dependências e testes)
     runs-on: ubuntu-24.04
@@ -105,8 +93,9 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      # verify: compila com -Xlint:all -Werror, roda os testes, confere a formatação (Spotless) e as
-      # dependências declaradas (dependency:analyze-only). O wrapper confere o sha256 da distribuição do Maven.
+      # verify: compila com -Xlint:all -Werror, roda os testes rápidos e os de integração (PostgreSQL via
+      # Testcontainers; o Docker já vem no runner), confere a formatação (Spotless), as dependências declaradas
+      # (dependency:analyze-only) e o drift da spec. O wrapper confere o sha256 da distribuição do Maven.
       - name: Verify
         run: ./mvnw --batch-mode --no-transfer-progress verify
 
@@ -115,7 +104,10 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: backend-java-test-reports
-          path: backend/target/surefire-reports/
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+            backend/target/openapi.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -158,7 +150,7 @@ jobs:
 
   api-spec:
     name: Spec OpenAPI (Spectral + OWASP)
-    # Lê a spec versionada; o passo de drift do job backend garante que ela é a mesma que o build gera.
+    # Lê a spec versionada; o OpenApiDocumentIT do job backend-java garante que ela é a mesma que a API gera.
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:

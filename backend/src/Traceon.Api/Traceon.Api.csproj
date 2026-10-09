@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <UserSecretsId>5d0f3f0e-7a3c-4b8e-9c55-2e7f4b1a9d61</UserSecretsId>
-    <!-- Spec versionada (code-first compensado): o build grava o documento e a CI falha se ele divergir do commit. -->
-    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../../docs/api</OpenApiDocumentsDirectory>
-    <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
+    <!-- docs/api/openapi.json passou a ser gerado pelo backend Java (ADR 0009, fase 2); este projeto sai na fase 3. -->
+    <OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
   </PropertyGroup>
 
   <ItemGroup>

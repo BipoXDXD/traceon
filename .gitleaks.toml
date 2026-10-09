@@ -1,0 +1,10 @@
+# Mantém as regras padrão do gitleaks e libera só os canários de teste.
+# Os testes semeiam valores "CANARY-<hex>" em senhas e mensagens para provar que nunca vazam em respostas e logs
+# (docs/security/threat-model.md). A allowlist casa só com esse formato: um segredo real nos mesmos arquivos ainda falha.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Canários de vazamento dos testes"
+regexTarget = "secret"
+regexes = ['''^CANARY-[0-9a-f]{8}''']

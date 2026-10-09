@@ -56,6 +56,18 @@ jobs:
       - name: Build
         run: dotnet build backend/Traceon.slnx -c Release --no-restore
 
+      # O build da API regrava docs/api/openapi.json (Microsoft.Extensions.ApiDescription.Server), sem
+      # connection string nem banco. Diferença aqui quer dizer contrato alterado sem a spec commitada junto:
+      # rode o build localmente e commite docs/api.
+      - name: Verificar drift da spec OpenAPI
+        run: |
+          git diff --exit-code -- docs/api
+          untracked="$(git ls-files --others --exclude-standard -- docs/api)"
+          if [ -n "$untracked" ]; then
+            echo "::error::Spec gerada e não versionada em docs/api: $untracked"
+            exit 1
+          fi
+
       - name: Testes
         run: >
           dotnet test --solution backend/Traceon.slnx -c Release --no-build
@@ -106,6 +118,35 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  api-spec:
+    name: Spec OpenAPI (Spectral + OWASP)
+    # Lê a spec versionada; o passo de drift do job backend garante que ela é a mesma que o build gera.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      SPECTRAL_CLI_VERSION: 6.16.3
+      SPECTRAL_OWASP_RULESET_VERSION: 2.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar o Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: frontend/.nvmrc
+
+      # O Spectral procura o ruleset OWASP ao lado do .spectral.yaml; NODE_PATH aponta para o node_modules
+      # temporário do npx (primeiro item do PATH dentro do -c), onde as duas versões exatas foram instaladas.
+      - name: Lint da spec
+        run: |
+          # shellcheck disable=SC2016 # aspas simples de propósito: o PATH é o do shell aberto pelo npx -c
+          npx --yes \
+            -p "@stoplight/spectral-cli@${SPECTRAL_CLI_VERSION}" \
+            -p "@stoplight/spectral-owasp-ruleset@${SPECTRAL_OWASP_RULESET_VERSION}" \
+            -c 'NODE_PATH="${PATH%%/.bin:*}" spectral lint docs/api/openapi.json --fail-severity=warn'
 
   secrets:
     name: Segredos (gitleaks)

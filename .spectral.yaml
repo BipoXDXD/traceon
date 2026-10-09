@@ -1,0 +1,45 @@
+# Lint da spec gerada no build (docs/api/openapi.json). Na CI: @stoplight/spectral-cli 6.16.3 e
+# @stoplight/spectral-owasp-ruleset 2.0.1, versões exatas (job api-spec da CI).
+# Cada regra desligada tem o motivo e a etapa em que volta. Desligue só onde não se aplica: prefira
+# "overrides" por path a desligar a regra para a API inteira.
+extends:
+  - spectral:oas
+  - "@stoplight/spectral-owasp-ruleset"
+
+rules:
+  # Projeto sem canal de suporte público ainda. Volta na etapa 6 (Cloud), quando houver URL e contato publicados.
+  info-contact: off
+  # A API não configura CORS de propósito: o navegador chega por proxy na mesma origem (ADR 0006).
+  # Volta na etapa 6 (Cloud), se a decisão de produção for CORS restrito em vez de reverse proxy.
+  owasp:api8:2023-define-cors-origin: off
+  # A spec é uma só para todos os ambientes, com server relativo ("/"); os servers por ambiente (público ou
+  # interno, local/staging/produção) só existem na etapa 6 (Cloud), quando estas duas voltam.
+  owasp:api9:2023-inventory-access: off
+  owasp:api9:2023-inventory-environment: off
+
+overrides:
+  # Health é anônimo por design (ADR 0004): orquestrador e proxy consultam sem credencial. Estas regras
+  # continuam ativas para qualquer outro path, então o primeiro endpoint da etapa 2 sem segurança falha o lint.
+  - files:
+      - "docs/api/openapi.json#/paths/~1health~1live"
+      - "docs/api/openapi.json#/paths/~1health~1ready"
+    rules:
+      # Sem autenticação por design; não há 401 possível.
+      owasp:api2:2023-read-restricted: off
+      owasp:api8:2023-define-error-responses-401: off
+      # Sem parâmetro, query nem corpo: não existe erro de validação (400/422) a documentar.
+      owasp:api8:2023-define-error-validation: off
+      # Sem rate limit hoje (risco registrado no ADR 0004). A decisão sai na etapa 2, junto com o rate limit
+      # de login; se health ganhar limite, estas duas voltam para estes paths.
+      owasp:api4:2023-rate-limit: off
+      owasp:api4:2023-rate-limit-responses-429: off
+
+  # ProblemDetails é gerado pelo framework e só aparece em resposta (hoje, o 500 genérico). Os limites de
+  # tamanho miram entrada (payload grande); seguem ativos para todos os outros schemas, então o primeiro DTO de
+  # entrada da etapa 2 é cobrado. Voltam aqui se a etapa 2 publicar um schema próprio de erro (lista errors[]).
+  - files:
+      - "docs/api/openapi.json#/components/schemas/ProblemDetails"
+    rules:
+      owasp:api4:2023-string-limit: off
+      owasp:api4:2023-string-restricted: off
+      owasp:api4:2023-integer-limit: off

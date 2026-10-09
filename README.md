@@ -209,4 +209,5 @@ estão configurados, mas não validados.
   [0005](docs/adr/0005-estrategia-de-testes.md) testes,
   [0006](docs/adr/0006-integracao-frontend-proxy-e-configuracao.md) frontend e configuração,
   [0007](docs/adr/0007-convencoes-de-api-e-seguranca-da-foundation.md) convenções de API e segurança,
-  [0008](docs/adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md) identidade, organizações e sites
+  [0008](docs/adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md) identidade, organizações e sites,
+  [0009](docs/adr/0009-migracao-do-backend-para-java-e-spring-boot.md) migração do backend para Java (em andamento)

@@ -1,6 +1,7 @@
 # ADR 0006 — Integração do frontend por proxy e configuração sem segredos no bundle
 
 - **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
+- **Revisão (2026-10-09):** proxy do Vite e ausência de CORS continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). User Secrets dão lugar a variável de ambiente ou `application-local.properties` fora do Git; a validação na partida vira `@ConfigurationProperties` com `@Validated`.
 
 ## Contexto
 

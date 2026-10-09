@@ -1,6 +1,7 @@
 # ADR 0002 — Catálogo de design patterns do Traceon
 
 - **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
+- **Revisão (2026-10-09):** o catálogo continua; exemplos e nomes de API .NET passam a ter equivalente Spring ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)): injeção por construtor nos beans, `Clock` no lugar de `TimeProvider`.
 
 ## Contexto
 

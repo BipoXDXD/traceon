@@ -22,8 +22,15 @@ internal sealed class ProjectFile
 
     public IReadOnlyList<string> FrameworkReferences { get; }
 
+    // Só pastas com .csproj: durante a migração (ADR 0009) src/ também guarda main/ e test/ do Maven.
     public static IReadOnlyList<string> SourceProjectNames =>
-        [.. Directory.GetDirectories(SourceDirectory()).Select(Path.GetFileName).OfType<string>().Order()];
+    [
+        .. Directory.GetDirectories(SourceDirectory())
+            .Where(directory => Directory.EnumerateFiles(directory, "*.csproj").Any())
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Order(),
+    ];
 
     public static ProjectFile Load(string projectName)
     {

@@ -103,8 +103,8 @@ Verificado em 2026-10-09, localmente.
 | API na porta 5120 | Atendido | `server.port=5120`; os passos do README (`.env` carregado no shell + `./mvnw spring-boot:run`) subiram a API, com `/health/ready` 200 contra o PostgreSQL do Compose e `/openapi/v1.json` 200 no profile `api-docs` |
 | Documentação descreve o Java | Atendido | README, CLAUDE.md, `.env.example`, `architecture.md`, `progress.md` e o modelo de ameaças (nomes dos testes Java, mitigações da etapa 2 com Spring Security, Spring Session e Bucket4j; R7 e R8 tratados pelo desenho) |
 | `./mvnw verify` sem o .NET | Atendido | `./mvnw clean verify` depois da remoção: 15 testes rápidos e 32 de integração, BUILD SUCCESS |
-| CI | **Pendente** | Não executada após o corte |
-| Contrato da etapa 2 (PR #3) | **Pendente** | Revisão escrita na branch do PR #3 (Spring Security, Spring Session JDBC, `csrf.spa()` com `GET /api/csrf`, Jackson estrito, Bucket4j; formato de `errors` mantido), ainda sem commit |
+| CI | Atendido | PR #6, run 37945435515: os 4 jobs passaram sem o .NET (backend, frontend, api-spec, secrets) |
+| Contrato da etapa 2 (PR #3) | Atendido | Commit `7371597` no PR #3 (Spring Security, Spring Session JDBC, `csrf.spa()` com `GET /api/csrf`, Jackson estrito, Bucket4j; formato de `errors` mantido); CI do PR #3 verde. Aguarda sua revisão |
 
 ## Verificações pendentes (não executadas)
 

@@ -1,6 +1,7 @@
 # ADR 0004 — Health checks: liveness × readiness
 
 - **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
+- **Revisão (2026-10-09):** o desenho e o contrato JSON do health continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md), D8). A implementação passa a controllers Spring com sonda de banco própria; o Actuator fica numa porta de gerenciamento não exposta.
 
 ## Contexto
 

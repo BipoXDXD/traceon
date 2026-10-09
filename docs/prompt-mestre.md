@@ -14,11 +14,13 @@ Construa um **SaaS de monitoramento de integridade de aplicações web**, inicia
 
 | Área | Decisão |
 |---|---|
-| Backend | C# 14, ASP.NET Core 10, EF Core 10, Npgsql e PostgreSQL |
+| Backend | Java 25, Spring Boot 4.1.1 (Spring MVC, Spring Security, Spring Data JPA), Flyway e PostgreSQL |
 | Frontend | React, TypeScript, Vite e Tailwind CSS |
-| Testes | xUnit; integração com PostgreSQL real e testes dos fluxos essenciais |
+| Testes | JUnit 6; integração com PostgreSQL real (Testcontainers) e testes dos fluxos essenciais |
 | Ambiente local | macOS Apple Silicon; Docker Compose para PostgreSQL |
 | Entrega | GitHub Actions; Microsoft Azure em etapa posterior |
+
+**Emenda de 2026-10-09:** o backend passou de C#/.NET para Java/Spring por decisão do responsável ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md)). O texto original está no histórico do Git.
 
 Confirme versões estáveis e compatíveis na documentação oficial. Fixe SDK, dependências e imagens em arquivos versionados; não use tags `latest` nem atualizações de versão principal sem justificativa.
 
@@ -29,22 +31,23 @@ Estrutura inicial:
 ```text
 traceon/
 ├── backend/
-│   ├── src/Traceon.{Domain,Application,Infrastructure,Api}/
-│   ├── tests/Traceon.{UnitTests,IntegrationTests}/
-│   └── Traceon.slnx
+│   ├── src/main/java/…/traceon/{módulo}/{domain,application,infrastructure,api}/
+│   ├── src/main/resources/db/migration/
+│   ├── src/test/java/
+│   ├── pom.xml
+│   └── mvnw
 ├── frontend/
 ├── infrastructure/
 ├── docs/adr/
 ├── .github/workflows/
 ├── compose.yaml
-├── global.json
 ├── .editorconfig
 ├── .gitignore
 ├── CLAUDE.md
 └── README.md
 ```
 
-A notação entre chaves representa projetos distintos. Dependências: `Domain` não depende dos demais; `Application → Domain`; `Infrastructure → Application/Domain`; `Api → Application`, usando `Infrastructure` para composição. Organize funcionalidades dentro dessas fronteiras sem criar projetos vazios para cada módulo futuro.
+Um único módulo Maven. Cada módulo de negócio é um pacote, e as camadas são subpacotes dele. Dependências: `domain` não depende dos demais; `application → domain`; `infrastructure → application/domain`; `api → application`, com a composição feita pelo Spring. Implementações ficam `package-private` sempre que possível, e a regra da dependência é verificada por ArchUnit e Spring Modulith na CI. Não crie pacotes vazios para módulos futuros.
 
 Módulos planejados: **Identity & Organizations, Sites, Monitoring, Integrity, Findings, Notifications e Audit**. Não são microserviços.
 
@@ -66,7 +69,7 @@ Módulos planejados: **Identity & Organizations, Sites, Monitoring, Integrity, F
 |---|---|
 | 1. Foundation | API, PostgreSQL, frontend integrado, testes, CI e execução local documentada |
 | 2. Identity & Sites | Identidade, organizações, permissões, cadastro de sites e comprovação de controle; isolamento testado |
-| 3. Monitoring | Worker com Playwright .NET, processamento persistente, limites, cancelamento e proteção do coletor verificados |
+| 3. Monitoring | Worker com Playwright Java, processamento persistente, limites, cancelamento e proteção do coletor verificados |
 | 4. Integrity | Comparação determinística, evidências e referências aprovadas/versionadas; laboratório isolado com alterações inofensivas |
 | 5. Findings & Notifications | Investigação, revisão, responsáveis, auditoria e notificações com retentativas limitadas e tolerância a duplicatas |
 | 6. Cloud | Implantação autorizada, custos avaliados, observabilidade, restauração de backup e procedimentos operacionais testados |
@@ -76,7 +79,7 @@ Não crie cobrança, integrações com plataformas de e-commerce nem bloqueio au
 ### Foundation — escopo executável agora
 
 1. Inspecione o diretório e as ferramentas existentes. Crie a solução, o frontend e as configurações necessárias, preservando arquivos e trabalhos anteriores.
-2. Configure PostgreSQL local, EF Core/Npgsql, variáveis externas e `.env.example` sem segredos reais. Não invente entidades ou migrations para justificar o ORM. Restrinja a exposição local do banco.
+2. Configure PostgreSQL local, Spring Data JPA/Flyway, variáveis externas e `.env.example` sem segredos reais. Não invente entidades ou migrations para justificar o ORM. Restrinja a exposição local do banco.
 3. Implemente `/health/live` sem dependência do banco e `/health/ready` com verificação real de conectividade. Diferencie indisponibilidade de sucesso; não exponha diagnósticos sensíveis. Habilite OpenAPI apenas em desenvolvimento e tratamento consistente de erros.
 4. Crie uma tela inicial Traceon que consulte o estado real da API por proxy local do Vite, sem liberar CORS indiscriminadamente. Não implemente autenticação improvisada nem endpoints de negócio nesta fase.
 5. Configure build, análise estática e testes na CI. Use testes de integração HTTP e PostgreSQL real, por exemplo com Testcontainers. Verifique liveness com banco indisponível e readiness com banco disponível/indisponível. Não crie regras artificiais ou testes triviais para preencher o projeto de unit tests.
@@ -136,7 +139,7 @@ Conserve o papel de cada bloco. Em conflitos, priorize requisitos, segurança, s
 | 12 | **Designing Data-Intensive Applications, 2e** — Martin Kleppmann e Chris Riccomini | Consistência, confiabilidade e processamento |
 | 13 | **The Art of PostgreSQL, 2e, atualização de 2026** — Dimitri Fontaine | SQL, modelagem e transações |
 | 14 | **PostgreSQL Mistakes and How to Avoid Them** — Jimmy Angelakos | Revisão preventiva de banco e operação |
-| 15 | **C# Concurrency: Asynchronous and Multithreaded Programming** — Nir Dobovizki | Workers, cancelamento e sincronização |
+| 15 | **Effective Java, 3e** — Joshua Bloch | Java idiomático; concorrência, workers e sincronização (itens 78 a 84) |
 | 16 | **Kubernetes in Action, 2e** — Marko Lukša e Kevin Conner | Consulta futura, sem impor Kubernetes ao MVP |
 | 17 | **Release It!, 2e** — Michael T. Nygard | Estabilidade e comportamento sob falhas |
 | 18 | **Fundamentals of DevOps and Software Delivery** — Yevgeniy Brikman | CI/CD, infraestrutura e operação |

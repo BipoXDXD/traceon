@@ -33,20 +33,23 @@ Situação verificada em 2026-10-09 na máquina do responsável:
 | 12 | *Designing Data-Intensive Applications*, 2e (Kleppmann, Riccomini) | PDF; notas `ddia.md` | Consistência, idempotência, outbox (ADR 0002 caps. 8 e 12) |
 | 13 | *The Art of PostgreSQL*, 2e, atualização de 2026 (Fontaine) | PDF; notas `art-of-postgresql.md` (edição 2ª, atualização de 2026, conforme as notas) | SQL, modelagem e transações, quando houver tabelas |
 | 14 | *PostgreSQL Mistakes and How to Avoid Them* (Angelakos) | PDF; notas `postgresql-mistakes.md` | Revisão preventiva de banco e operação |
-| 15 | *C# Concurrency: Asynchronous and Multithreaded Programming* (Dobovizki) | **Não disponível** (nem PDF nem notas) | Ver "Substituição" abaixo |
+| 15 | *Effective Java*, 3e (Bloch) | PDF; notas `effective-java.md`; destilado em `knowledge/java-spring.md` | Java idiomático e concorrência (itens 78 a 84): worker, cancelamento e sincronização na etapa 3. Substituiu o livro de C# em 2026-10-09 (ver abaixo) |
 | 16 | *Kubernetes in Action*, 2e (Lukša, Conner) | PDF; notas `kubernetes-in-action.md` | Consulta futura; Kubernetes **não** é requisito do MVP. Usado só como base conceitual de liveness × readiness (ADR 0004) |
 | 17 | *Release It!*, 2e (Nygard) | PDF; notas `release-it.md` | Timeouts, estabilidade sob falha (ADR 0002 cap. 5; ADR 0004) |
 | 18 | *Fundamentals of DevOps and Software Delivery* (Brikman) | PDF; sem arquivo próprio em `notes/`, destilado em `knowledge/devops.md` | CI/CD, infraestrutura e operação (ADR 0003, CI) |
 | 19 | *Refactoring UI* (Wathan, Schoger) | **Sem PDF** em `Dev/`; notas `refactoring-ui.md` | Referência única de acabamento visual do frontend |
 | 20 | *Code That Fits in Your Head* (Seemann) | PDF; notas `code-that-fits.md` | Revisão transversal e desenvolvimento incremental |
 
-### Substituição do nº 15
+### Troca do nº 15
 
-O livro de Nir Dobovizki não está disponível. Como substituto de consulta (não como atribuição) usa-se
-*Concurrency in C# Cookbook*, 2ª ed. (Stephen Cleary), cujas notas estão em `~/.claude/knowledge/notes/concurrency-csharp.md`
-(não há PDF dele em `Dev/`). Nenhuma passagem é atribuída ao livro de Dobovizki. A etapa 3 (worker, cancelamento e
-sincronização) deve conferir também a documentação oficial do .NET. A Foundation não usa concorrência além do
-que o ASP.NET Core já oferece.
+Até 2026-10-09 o nº 15 era *C# Concurrency: Asynchronous and Multithreaded Programming* (Dobovizki), que nunca esteve
+disponível (nem PDF nem notas); o substituto de consulta era *Concurrency in C# Cookbook*, 2ª ed. (Cleary). Com a
+migração do backend para Java ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md)), o prompt mestre
+passou a listar *Effective Java*, 3e, que está disponível. Nenhuma passagem foi atribuída ao livro de Dobovizki.
+
+Consulta complementar para Spring, fora dos 20 e sem leitura obrigatória: *Spring Security in Action*, 2e (Spilcă) e
+*Cloud Native Spring in Action* (Vitale), ambos com PDF e notas (`spring-security-in-action.md`,
+`cloud-native-spring.md`).
 
 ### Fonte que não faz parte dos 20
 

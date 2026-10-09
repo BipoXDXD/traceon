@@ -5,6 +5,7 @@
   [ADR 0002](0002-catalogo-de-design-patterns.md) (Strategy só com a segunda variante),
   [ADR 0006](0006-integracao-frontend-proxy-e-configuracao.md) (proxy do Vite, sem CORS),
   [modelo de ameaças](../security/threat-model.md).
+- **Revisão (2026-10-09):** as decisões de produto continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md), D6). ASP.NET Core Identity dá lugar a Spring Security 7 + Spring Session JDBC + fluxos de conta próprios (tokens com hash, validade e uso único); "o mesmo `TraceonDbContext`" vira "o mesmo `DataSource`"; migrations EF viram Flyway em SQL, aplicadas por comando.
 
 ## Contexto
 

@@ -1,6 +1,7 @@
 # ADR 0003 — Stack e política de versões
 
-- **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
+- **Status:** Aceito (2026-10-09); **stack do backend Superseded pelo ADR 0009**. Revisão pendente pelo responsável do projeto.
+- **Superseded (2026-10-09) na parte de stack do backend** pelo [ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md): Java 25 e Spring Boot 4.1.1 no lugar de C# 14, ASP.NET Core 10 e EF Core 10. A política de versões (estáveis, exatas, sem `latest`, idade mínima de 2 semanas, sem major sem justificativa) continua valendo; no Java as versões ficam no `pom.xml` (BOM do Boot e `<properties>`).
 
 ## Contexto
 

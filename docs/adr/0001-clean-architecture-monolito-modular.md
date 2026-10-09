@@ -2,6 +2,7 @@
 
 - **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
 - **Decisores:** responsável do projeto; implementação conduzida pelo assistente.
+- **Revisão (2026-10-09):** a arquitetura continua; a implementação passa a Java ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). Os quatro projetos .NET viram subpacotes `domain`/`application`/`infrastructure`/`api` dentro de cada módulo de um único módulo Maven; a regra da dependência sai do compilador e passa a `package-private` + ArchUnit + Spring Modulith. "Um `DbContext`, um schema por módulo" vira "um `DataSource`, um schema por módulo".
 
 ## Contexto
 

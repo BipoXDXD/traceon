@@ -1,6 +1,7 @@
 # ADR 0005 — Estratégia de testes
 
 - **Status:** Aceito (2026-10-09). Revisão pendente pelo responsável do projeto.
+- **Revisão (2026-10-09):** a estratégia continua ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). xUnit e `WebApplicationFactory` viram JUnit 6, `@SpringBootTest` e MockMvc/`RestTestClient`; Testcontainers 2 com `@ServiceConnection`; arquitetura com ArchUnit e Spring Modulith. Nada de banco em memória (H2 incluso).
 
 ## Contexto
 

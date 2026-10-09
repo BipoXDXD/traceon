@@ -4,6 +4,7 @@
 - **Relacionados:** [ADR 0004](0004-health-checks-liveness-e-readiness.md) (desenho do health),
   [ADR 0006](0006-integracao-frontend-proxy-e-configuracao.md) (proxy, sem CORS),
   [modelo de ameaças](../security/threat-model.md).
+- **Revisão (2026-10-09):** as convenções continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). A spec segue code-first e versionada, gerada por springdoc num teste de integração que compara com `docs/api/openapi.json`; headers de segurança vêm de `http.headers(...)` do Spring Security; Problem Details por `ProblemDetail` + `@RestControllerAdvice`.
 
 ## Contexto
 

@@ -1,9 +1,5 @@
-# .NET
-bin/
-obj/
-*.user
-TestResults/
-coverage/
+# Java / Maven
+target/
 
 # Node / frontend
 node_modules/
@@ -19,15 +15,9 @@ frontend/playwright-report/
 
 # IDEs e ferramentas locais
 .idea/
-.vs/
 .vscode/
-riderModule.iml
-/_ReSharper.Caches/
 .serena/
 .DS_Store
 
 # Saídas locais do Playwright MCP
 .playwright-mcp/
-
-# Java / Maven
-target/

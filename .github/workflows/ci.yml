@@ -14,66 +14,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DOTNET_NOLOGO: "1"
-  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
-
 jobs:
+  # Dono da spec: o OpenApiDocumentIT falha se docs/api/openapi.json divergir da que a API gera.
   backend:
-    name: Backend (build, format e testes)
-    # Versão fixa do runner: ubuntu-latest muda de imagem sem aviso. Docker já vem instalado
-    # na imagem (Docker 28.0.4 no Ubuntu 24.04), necessário para o Testcontainers.
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Instalar o SDK do .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-
-      # Não existe packages.lock.json, então o cache do setup-dotnet não serve. A chave
-      # usa os arquivos que definem as versões (central package management + csproj).
-      - name: Cache do NuGet
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'backend/Directory.Packages.props', 'backend/Directory.Build.props', 'backend/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Restore
-        run: dotnet restore backend/Traceon.slnx
-
-      - name: Verificar formatação
-        run: dotnet format backend/Traceon.slnx --verify-no-changes --no-restore
-
-      - name: Build
-        run: dotnet build backend/Traceon.slnx -c Release --no-restore
-
-      - name: Testes
-        run: >
-          dotnet test --solution backend/Traceon.slnx -c Release --no-build
-          --report-xunit-trx --results-directory "$GITHUB_WORKSPACE/TestResults"
-
-      - name: Publicar resultados dos testes
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: backend-test-results
-          path: TestResults/
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # Migração para Java (ADR 0009): convive com o job .NET acima até o corte da fase 3, quando assume o nome
-  # "backend". Desde a fase 2 é dono da spec: o OpenApiDocumentIT falha se docs/api/openapi.json divergir da gerada.
-  backend-java:
-    name: Backend Java (formatação, build, análise de dependências e testes)
+    name: Backend (formatação, build, análise de dependências e testes)
+    # Versão fixa do runner: ubuntu-latest muda de imagem sem aviso. O Docker já vem na imagem, para o
+    # Testcontainers.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -103,7 +49,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: backend-java-test-reports
+          name: backend-test-reports
           path: |
             backend/target/surefire-reports/
             backend/target/failsafe-reports/
@@ -150,7 +96,7 @@ jobs:
 
   api-spec:
     name: Spec OpenAPI (Spectral + OWASP)
-    # Lê a spec versionada; o OpenApiDocumentIT do job backend-java garante que ela é a mesma que a API gera.
+    # Lê a spec versionada; o OpenApiDocumentIT do job backend garante que ela é a mesma que a API gera.
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:

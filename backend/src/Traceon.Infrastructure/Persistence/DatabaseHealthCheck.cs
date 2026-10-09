@@ -11,8 +11,8 @@ namespace Traceon.Infrastructure.Persistence;
 /// Only the probe gets the short Timeout; the application's connections keep whatever the operator configured.
 /// Pooling is off so every probe reaches the server: a pooled open can return an idle connector without any
 /// network round trip and report a dead database as ready.
-/// Failures surface as exceptions, which the health check service turns into Unhealthy; the response writer
-/// never serializes them.
+/// Failures surface as exceptions, which the health check service turns into Unhealthy; the health endpoints
+/// return only names and statuses, never the exception.
 /// </remarks>
 internal sealed class DatabaseHealthCheck(IOptions<DatabaseOptions> options) : IHealthCheck
 {

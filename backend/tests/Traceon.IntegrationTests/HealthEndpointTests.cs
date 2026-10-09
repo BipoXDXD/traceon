@@ -114,6 +114,29 @@ public sealed class HealthEndpointTests(PostgresFixture postgres)
         Assert.True(response.Headers.CacheControl?.NoStore, "Cache-Control must contain no-store");
     }
 
+    [Theory]
+    [InlineData("POST", "/health/live")]
+    [InlineData("PUT", "/health/live")]
+    [InlineData("DELETE", "/health/live")]
+    [InlineData("POST", "/health/ready")]
+    [InlineData("PUT", "/health/ready")]
+    [InlineData("DELETE", "/health/ready")]
+    public async Task Health_endpoints_reject_other_methods_with_405_problem_details(string method, string path)
+    {
+        using var database = UnreachableDatabase.Create(UnreachableDatabaseKind.RefusesConnections);
+        await using var factory = new TraceonApiFactory(database.ConnectionString);
+        using var client = CreateClient(factory);
+        using var request = new HttpRequestMessage(new HttpMethod(method), path);
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("\"status\":405", body, StringComparison.Ordinal);
+        Assert.Equal(["GET"], response.Content.Headers.Allow);
+    }
+
     private static HttpClient CreateClient(WebApplicationFactory<Program> factory)
     {
         var client = factory.CreateClient();

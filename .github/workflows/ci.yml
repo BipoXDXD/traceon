@@ -82,6 +82,43 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # Migração para Java (ADR 0009): convive com o job .NET acima até o corte da fase 3, quando assume o nome
+  # "backend" e o drift da spec.
+  backend-java:
+    name: Backend Java (formatação, build, análise de dependências e testes)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar o JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      # verify: compila com -Xlint:all -Werror, roda os testes, confere a formatação (Spotless) e as
+      # dependências declaradas (dependency:analyze-only). O wrapper confere o sha256 da distribuição do Maven.
+      - name: Verify
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Publicar relatórios dos testes
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-java-test-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
   frontend:
     name: Frontend (lint, tipos, testes e build)
     runs-on: ubuntu-24.04

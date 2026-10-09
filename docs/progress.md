@@ -53,8 +53,8 @@ isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 | Permissões do `Member` | Lê, cadastra e verifica sites; só `Owner` remove site e exclui a organização |
 | Domínio em várias organizações | Permitido, cada uma comprova: `UNIQUE (organização, domínio)` |
 | Expiração da comprovação | Não expira nesta etapa; a etapa 3 revalida antes de coletar |
-| Endpoints de conta | Próprios sobre `UserManager`/`SignInManager`, sem `MapIdentityApi` (token na query, enumeração no cadastro, rotas fora do escopo) |
-| Erro de validação | `HttpValidationProblemDetails` do framework |
+| Endpoints de conta | Próprios sobre o Spring Security, com sessão no Spring Session JDBC e CSRF por `csrf.spa()` (revisado no corte da migração para Java, ADR 0009) |
+| Erro de validação | `ProblemDetail` com `errors` como mapa campo → mensagens (formato do `HttpValidationProblemDetails`, mantido na migração para Java) |
 
 ### Pendências de API e segurança herdadas da Foundation
 
@@ -72,7 +72,7 @@ Itens que a Foundation não pôde fazer por falta de entrada, escrita ou autenti
   para os paths de health no `.spectral.yaml`.
 - `ETag` na leitura e `If-Match` em PUT/PATCH (412 se desatualizado).
 - Schemathesis (`--checks=all`) e `oasdiff breaking` na CI, ao lado do Spectral.
-- ~~Schema de erro próprio com lista `errors[]`~~: decidido em 2026-10-09 usar o `HttpValidationProblemDetails` do framework (`errors` como mapa campo → mensagens); o override do Spectral para o schema `ProblemDetails` continua.
+- ~~Schema de erro próprio com lista `errors[]`~~: decidido em 2026-10-09 usar o formato do `HttpValidationProblemDetails` (`errors` como mapa campo → mensagens), mantido em Java num `ProblemDetail`; o override do Spectral para o schema `ProblemDetail` continua.
 - Revisão de logs: allowlist de campos e canário de vazamento nos logs de requisição com dado de usuário (risco R3).
 
 **Etapa 6 (Cloud):**

@@ -3,6 +3,8 @@
 - **Status:** rascunho para revisão (2026-10-09). Escrito antes do código. A spec continua code-first
   ([ADR 0007](../adr/0007-convencoes-de-api-e-seguranca-da-foundation.md)): ao implementar, os endpoints geram
   `openapi.json`, e este documento é a referência que a spec tem de cumprir.
+- **Stack:** Java 25 + Spring Boot 4.1.1 ([ADR 0009](../adr/0009-migracao-do-backend-para-java-e-spring-boot.md),
+  D6): Spring Security 7, Spring Session JDBC e fluxos de conta próprios. Revisado em 2026-10-09 no corte da migração.
 - **Base:** [ADR 0008](../adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md) e
   [modelo de ameaças](../security/threat-model.md#etapa-2-identity--sites), ameaças 20 a 37 (citadas como T20…T37).
 
@@ -11,14 +13,14 @@
 | Tema | Regra |
 |---|---|
 | Prefixo | `/api`, sem versão no path: há um frontend próprio, uma versão só e mudanças aditivas. O proxy do Vite passa a encaminhar `/api` além de `/health` |
-| Endpoints de conta | Próprios, sobre `UserManager`/`SignInManager` do Identity; **sem `MapIdentityApi`** (token na query, enumeração no cadastro, `/refresh` e `/manage/*` fora do escopo) |
-| Autenticação | Cookie de sessão do Identity (`HttpOnly`, `Secure`, `SameSite=Strict`, sem persistência além da sessão do navegador). *Fallback policy* exige usuário autenticado; as rotas anônimas estão marcadas abaixo e formam a allowlist do `RouteInventoryTests` (T25) |
-| Antiforgery | Todo método não seguro exige o header `X-XSRF-TOKEN`, validado por filtro no grupo `/api` (as Minimal APIs só validam formulários por conta própria). O token vem de `GET /api/antiforgery/token` e precisa ser buscado de novo após login e logout, porque fica atrelado ao usuário (T24) |
-| JSON | `camelCase`; entrada com `UnmappedMemberHandling.Disallow`: campo desconhecido → 400 (T28). Enums como string |
+| Endpoints de conta | Próprios, em controllers sobre o Spring Security (`AuthenticationManager`, `DelegatingPasswordEncoder` com bcrypt); **sem form login nem HTTP Basic**. Tokens de confirmação e de redefinição aleatórios (128 bits), guardados só com hash, com validade e uso único |
+| Autenticação | Sessão do Spring Session JDBC, guardada no PostgreSQL; cookie `HttpOnly`, `Secure`, `SameSite=Strict`, sem persistência além da sessão do navegador. A `SecurityFilterChain` termina em `anyRequest().authenticated()`; as rotas anônimas estão marcadas abaixo e formam a allowlist do `RouteInventoryIT` (T25). XHR sem sessão recebe 401, nunca redirecionamento |
+| CSRF | `csrf.spa()` do Spring Security: todo método não seguro exige no header `X-XSRF-TOKEN` o valor do cookie `XSRF-TOKEN` (legível pelo frontend). O cookie vem de `GET /api/csrf` e é trocado no login e no logout, então o frontend relê o cookie depois deles (T24) |
+| JSON | `camelCase`; entrada em `record` com `FAIL_ON_UNKNOWN_PROPERTIES` do Jackson: campo desconhecido → 400 (T28). Enums como string |
 | Ids | `uuid` (UUIDv7 gerado pelo servidor); nunca aceitos no corpo de criação |
 | Datas | ISO 8601 em UTC (`2026-10-09T12:00:00Z`) |
 | Listas | Objeto `{ "items": [...] }` para crescer de forma aditiva. Sem paginação nesta etapa: o tamanho é limitado pelas cotas por conta (até 10 organizações por usuário e 50 sites por organização, por configuração) |
-| Erros | Problem Details do framework (`application/problem+json`). 400 de validação = `HttpValidationProblemDetails`, com `errors` como mapa campo → mensagens. 401 sem corpo de detalhe; 403 e 404 genéricos; 409 com `detail` legível; 429 com `Retry-After`; 500 genérico com `traceId` (Foundation) |
+| Erros | Problem Details (`application/problem+json`, `ProblemDetail` do Spring). 400 de validação com o membro de extensão `errors` como mapa campo → mensagens (o formato do `HttpValidationProblemDetails` decidido antes da migração, agora montado no `@RestControllerAdvice`), sem repetir o valor recebido. 401 sem corpo de detalhe; 403 e 404 genéricos; 409 com `detail` legível; 429 com `Retry-After`; 500 genérico com `traceId` (Foundation) |
 | Acesso alheio | Recurso de outra organização responde **404**, igual ao inexistente (T26). Papel insuficiente na própria organização responde **403** (T27) |
 | Cache | `Cache-Control: no-store` em toda resposta de `/api` |
 | Dados sensíveis | Nenhum e-mail, senha ou token em path ou query (T33). O link dos e-mails leva `userId` e `token` no **fragmento** (`#`), que o navegador não envia ao servidor; o frontend os repassa no corpo do POST |
@@ -39,13 +41,13 @@
 ## Operações
 
 Legenda de acesso: **anônima** (na allowlist pública), **autenticada**, **membro** (qualquer papel na organização),
-**owner**. Todo método não seguro também exige o token antiforgery.
+**owner**. Todo método não seguro também exige o token CSRF.
 
-### Antiforgery
+### CSRF
 
 | Método e path | `operationId` | Acesso | Corpo | Respostas |
 |---|---|---|---|---|
-| `GET /api/antiforgery/token` | `getAntiforgeryToken` | anônima | — | 200 `{ "requestToken": string }` |
+| `GET /api/csrf` | `getCsrfToken` | anônima | — | 204 com `Set-Cookie: XSRF-TOKEN` (sem `HttpOnly`, `SameSite=Strict`), que o frontend devolve no header `X-XSRF-TOKEN` |
 
 ### Conta
 
@@ -55,9 +57,9 @@ Legenda de acesso: **anônima** (na allowlist pública), **autenticada**, **memb
 | `POST /api/account/confirm-email` | `confirmEmail` | anônima | `{ userId, token }` | 204. 400 genérico para usuário inexistente, token inválido, expirado ou já usado (T22) |
 | `POST /api/account/resend-confirmation` | `resendConfirmationEmail` | anônima | `{ email }` | **202 sempre**, sem corpo. 429 |
 | `POST /api/account/login` | `signIn` | anônima | `{ email, password }` | 204 com `Set-Cookie` de sessão nova (T23). **401 genérico** para senha errada, conta inexistente, não confirmada ou bloqueada (T21, T22). 429 |
-| `POST /api/account/logout` | `signOut` | autenticada | — | 204; o cookie antigo deixa de valer (troca do security stamp) |
+| `POST /api/account/logout` | `signOut` | autenticada | — | 204; a sessão é apagada no banco e o cookie antigo deixa de valer |
 | `POST /api/account/forgot-password` | `requestPasswordReset` | anônima | `{ email }` | **202 sempre**, sem corpo (T21). 429 |
-| `POST /api/account/reset-password` | `resetPassword` | anônima | `{ userId, token, newPassword }` | 204; sessões existentes invalidadas. 400 genérico para usuário ou token inválidos |
+| `POST /api/account/reset-password` | `resetPassword` | anônima | `{ userId, token, newPassword }` | 204; todas as sessões da conta são apagadas no banco. 400 genérico para usuário ou token inválidos |
 | `GET /api/account` | `getAccount` | autenticada | — | 200 `AccountResponse` |
 | `POST /api/account/delete` | `deleteAccount` | autenticada | `{ currentPassword }` | 204; remove o usuário, as organizações em que é o único `Owner` e os sites delas, numa transação (T35, T37). 400 senha atual errada (sem lockout separado; conta no rate limit do login) |
 
@@ -120,12 +122,12 @@ do resolvedor, sem detalhe interno.
 
 ## Rate limit
 
-Por IP, salvo indicação. Contagem em memória da instância (risco R7). Toda recusa responde 429 em Problem Details
+Por IP, salvo indicação. Bucket4j com os baldes no PostgreSQL: o limite vale somado entre réplicas (fecha o risco R7). Toda recusa responde 429 em Problem Details
 com `Retry-After`.
 
 | Política | Operações | Limite inicial (configurável) |
 |---|---|---|
-| `sign-in` | `signIn` | 10 por minuto por IP; o lockout do Identity soma 5 falhas → 5 min por conta (T20) |
+| `sign-in` | `signIn` | 10 por minuto por IP; o lockout por conta soma 5 falhas → 5 min (T20) |
 | `account-email` | `registerAccount`, `resendConfirmationEmail`, `requestPasswordReset` | 5 por 15 minutos por IP (T32) |
 | `site-verification` | `verifySite` | 10 por hora por usuário (T31) |
 

@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+
+/*
+ * Traceon tokens. The default Tailwind palette is removed on purpose: only the tones below exist,
+ * and src/theme.test.ts checks their WCAG contrast pairs.
+ */
+@theme {
+  --color-*: initial;
+
+  --color-ink-950: oklch(0.17 0.02 255);
+  --color-ink-900: oklch(0.21 0.022 255);
+  --color-ink-800: oklch(0.26 0.024 255);
+  --color-ink-700: oklch(0.33 0.024 255);
+  --color-ink-400: oklch(0.74 0.018 255);
+  --color-ink-300: oklch(0.83 0.014 255);
+  --color-ink-100: oklch(0.96 0.008 255);
+
+  --color-brand-200: oklch(0.9 0.07 205);
+  --color-brand-300: oklch(0.83 0.11 205);
+  --color-brand-400: oklch(0.76 0.12 205);
+
+  --color-ok-300: oklch(0.85 0.14 155);
+  --color-ok-900: oklch(0.29 0.06 155);
+  --color-warn-300: oklch(0.87 0.13 85);
+  --color-warn-900: oklch(0.31 0.06 80);
+  --color-danger-300: oklch(0.8 0.11 25);
+  --color-danger-900: oklch(0.29 0.07 25);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-ink-100 antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-300);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -68,7 +68,7 @@ Verificado em 2026-10-09 com Temurin 25.0.4 e Maven 3.9.16 (wrapper).
 | Formatador em modo `check` | Atendido | `spotless:check` no `verify` acusou violação antes do `spotless:apply` |
 | Dependências declaradas = usadas | Atendido | `dependency:analyze-only` falhou com `spring-context` usado e não declarado; corrigido declarando |
 | Regra da dependência e fronteira de módulos desde o primeiro commit | Atendido | `ArchitectureTest` (4) e `ModularityTest` (1) verdes; com classes de violação temporárias, os 5 falharam |
-| Job `backend-java` na CI | **Pendente** | Adicionado ao `ci.yml`; ainda não executado no GitHub (branch não publicada) |
+| Job `backend-java` na CI | Atendido | PR #6, run 37939966329: os 5 jobs passaram, inclusive o .NET. A primeira execução (run 37939618198) derrubou o teste .NET que tratava toda pasta de `backend/src` como projeto; corrigido para contar só pasta com `.csproj` |
 
 ## Verificações pendentes (não executadas)
 

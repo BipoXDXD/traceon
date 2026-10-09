@@ -45,7 +45,7 @@ isolamento testado. Fica para o responsável aprovar o escopo antes de começar.
 | Esquema do banco por módulo | Um schema por módulo no mesmo `DbContext` (ADR 0001) e política de migrations | Primeira migration da história do projeto; difícil de desfazer |
 | Comprovação de controle do site | Meta tag, arquivo `.well-known`, registro DNS TXT: qual o primeiro método | O prompt exige autorização do site antes de qualquer coleta; a Strategy só se justifica com o segundo método |
 | Modelo de ameaças e dados pessoais | STRIDE do cadastro e da comprovação; quais dados pessoais são guardados e por quanto tempo | Feature com permissão e URL fornecida por usuário (risco de SSRF já na validação de URL) |
-| Validação da CI | Publicar o repositório (privado ou público) para executar a CI e o Dependabot | Pendência herdada da Foundation; publicar exige autorização do responsável |
+| Validação da CI | Repositório publicado como privado (BipoXDXD/traceon) em 2026-10-09; os jobs não iniciaram por bloqueio de cobrança do GitHub Actions. Opções: tornar público (Actions gratuito) × regularizar a cobrança | Pendência herdada da Foundation |
 
 ### Pendências de API e segurança herdadas da Foundation
 
@@ -87,7 +87,7 @@ aqui, conforme o ADR 0002.
 
 ## Dívidas e riscos em aberto
 
-- CI e Dependabot nunca executados (sem remote).
+- CI nunca executada: o repositório privado existe, mas o GitHub recusou iniciar os jobs por cobrança da conta (2026-10-09). O Dependabot iniciou.
 - Controles sem teste automatizado: banco só no loopback e segredo fora do bundle (threat-model, linhas 13 e 15).
 - Risco aceito: `/health/ready` sem rate limit (R1), `AllowedHosts: "*"` (R2), exceção completa no log do 500 (R3).
 - Pasta `infrastructure/` ainda inexistente; prevista no prompt mestre e sem conteúdo até haver infraestrutura como código.

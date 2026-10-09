@@ -8,7 +8,7 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 | Etapa | Status | Observações |
 |---|---|---|
 | 1. Foundation | Concluída em 2026-10-09 | API, PostgreSQL local, frontend integrado, testes e CI executada no GitHub (os 4 jobs passaram). Pendente só a revisão das ADRs pelo responsável (veja [acceptance.md](acceptance.md)) |
-| 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); próximo passo: STRIDE no modelo de ameaças e contrato OpenAPI, ainda sem código |
+| 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); STRIDE escrito (ameaças 20 a 37, testes planejados); próximo passo: contrato OpenAPI, ainda sem código |
 | 3. Monitoring | Não iniciada | Depende da etapa 2 (sites com controle comprovado) |
 | 4. Integrity | Não iniciada | Depende da etapa 3 |
 | 5. Findings & Notifications | Não iniciada | Depende da etapa 4 |
@@ -43,7 +43,11 @@ isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 | Organização e papéis | `Membership(user, organization, role)` com `Owner` e `Member`; várias organizações por usuário |
 | Banco e migrations | Schemas `identity` e `sites` no mesmo `DbContext`; PK UUIDv7; migrations aplicadas por comando explícito |
 | Comprovação de controle do site | DNS TXT primeiro; sem HTTP à URL do usuário nesta etapa |
-| Dados pessoais | Só e-mail e hash de senha, removidos com a conta; STRIDE no modelo de ameaças antes do código (pendente) |
+| Dados pessoais | Só e-mail e hash de senha, removidos com a conta; STRIDE em `security/threat-model.md` (ameaças 20 a 37) |
+| Enumeração no cadastro | Confirmação de e-mail obrigatória; cadastro responde sempre 202 |
+| Permissões do `Member` | Lê, cadastra e verifica sites; só `Owner` remove site e exclui a organização |
+| Domínio em várias organizações | Permitido, cada uma comprova: `UNIQUE (organização, domínio)` |
+| Expiração da comprovação | Não expira nesta etapa; a etapa 3 revalida antes de coletar |
 
 ### Pendências de API e segurança herdadas da Foundation
 

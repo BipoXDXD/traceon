@@ -52,7 +52,18 @@ aplica SQL sem revisão).
 4. **Primeiro método de comprovação: DNS TXT** (opção A). A Strategy de métodos só entra com o segundo método
    (ADR 0002).
 5. **Dados pessoais:** só e-mail e hash de senha, removidos com a exclusão da conta. O STRIDE do cadastro e da
-   comprovação entra no modelo de ameaças antes do código.
+   comprovação está no [modelo de ameaças](../security/threat-model.md#etapa-2-identity--sites), ameaças 20 a 37.
+6. **Escolhas complementares do responsável (2026-10-09):**
+   - **Confirmação de e-mail obrigatória** antes do login. O cadastro responde sempre 202 com o mesmo corpo, o que
+     fecha a enumeração de contas (a alternativa era 201 + 409 para e-mail existente, freada só por rate limit). O
+     custo é uma porta de envio de e-mail, com adaptador falso em dev e testes.
+   - **`Member` lê, cadastra e verifica sites; só `Owner` remove site e exclui a organização** (a alternativa era
+     `Member` só leitura).
+   - **O mesmo domínio pode existir em várias organizações** (agência e cliente), cada uma com token e comprovação
+     próprios: `UNIQUE (organização, domínio)`. Um dono global bloquearia esse caso e abriria squatting antes da
+     verificação.
+   - **A comprovação não expira nesta etapa;** a etapa 3 revalida o TXT antes de cada coleta (risco R9 do modelo).
+     Expiração por prazo exigiria um job agendado, que só existe com o worker.
 
 Por quê: é o caminho com menos infraestrutura (nada de Azure nem serviço novo), com a sessão mais segura para o
 frontend atual, e que adia toda requisição a URL de usuário para a etapa 3, junto do coletor isolado.

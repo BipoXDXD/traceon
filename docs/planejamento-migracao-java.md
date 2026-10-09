@@ -232,6 +232,34 @@ Ao fim da fase: a spec gerada pelo Java substitui `docs/api/openapi.json`. O dif
 schema e detalhes do gerador; a forma das respostas não muda (o frontend é a prova). O `.spectral.yaml` ajusta os
 `overrides` para os nomes de schema do springdoc.
 
+**Execução (2026-10-09), branch `feat/backend-java`:** os 45 casos têm equivalente (tabela em
+[acceptance.md](acceptance.md)); `./mvnw verify` roda 15 testes rápidos e 32 de integração. Pacotes `health`
+(controller, respostas, sonda) e `shared` (`persistence`, `web`, `openapi`).
+
+- **Ordem dos testes:** o código veio antes dos testes nesta fase. Para compensar, cada comportamento foi
+  sabotado (11 sabotagens: `no-store`, header, timeout da sonda, senha no log, `traceId`, liveness consultando o
+  banco, URL malformada aceita, mensagem ecoando a URL, Flyway na partida, rota nova, pool conectando na partida)
+  e o teste correspondente falhou em todas.
+- **Configuração do banco:** `spring.datasource.url`/`username`/`password` (variáveis `SPRING_DATASOURCE_*`), com a
+  senha fora da URL. A validação fica num `DataSource` próprio (`DataSourceConfiguration`), porque a do binder do
+  Boot repete o valor no log da falha. Os testes usam `@DynamicPropertySource`, não `@ServiceConnection`, para
+  passar pela mesma validação.
+- **Partida sem banco:** `ddl-auto=none` (e não `validate`, como dizia a D7) e Hibernate sem leitura de metadados
+  na subida, para a aplicação subir com o banco fora do ar (ADR 0004). A validação de schema volta com as
+  primeiras entidades, nos testes de integração. **Lacuna:** nenhum teste barra o Hibernate voltando a ler
+  metadados na partida; o efeito seria uma subida lenta, não uma falha.
+- **Headers de segurança** por filtro próprio, não pelo Spring Security: sem autenticação, ele só escreveria
+  headers e mudaria o 405 para 403 (CSRF). Entra na etapa 2, com a autenticação (nota no ADR 0007).
+- **Correlação:** Micrometer Tracing com OpenTelemetry (padrão do `duora-api`): trace id W3C no log ECS e no
+  `traceId` do 500. Logs em JSON por padrão; o profile `plain-logs` volta ao texto. Nada é exportado sem coletor.
+- **Actuator** não entrou: a Foundation não tem métricas, e o health é o controller próprio (D8).
+- **Spec:** `docs/api/openapi.json` passou a ser gerada pelo Java (`OpenApiDocumentIT` grava
+  `backend/target/openapi.json` e falha no drift). O csproj .NET deixou de gerá-la e o passo de drift saiu do job
+  .NET. Diferenças para a spec .NET: `ProblemDetail` (antes `ProblemDetails`) com limites e `traceId`, enum de
+  status inline, `openapi` 3.1.0. O `.spectral.yaml` desliga só `string-restricted` nesse schema; os limites de
+  tamanho voltaram a valer nele. Spectral local sem avisos.
+- `/error` (destino interno do Tomcat) aparece no inventário de rotas; chamado direto responde 404.
+
 ### Fase 3: corte
 
 1. Apaga `backend/` .NET, `global.json` e `Directory.Packages.props`; Dependabot de `nuget` para `maven`.

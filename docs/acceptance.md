@@ -70,6 +70,25 @@ Verificado em 2026-10-09 com Temurin 25.0.4 e Maven 3.9.16 (wrapper).
 | Regra da dependência e fronteira de módulos desde o primeiro commit | Atendido | `ArchitectureTest` (4) e `ModularityTest` (1) verdes; com classes de violação temporárias, os 5 falharam |
 | Job `backend-java` na CI | Atendido | PR #6, run 37939966329: os 5 jobs passaram, inclusive o .NET. A primeira execução (run 37939618198) derrubou o teste .NET que tratava toda pasta de `backend/src` como projeto; corrigido para contar só pasta com `.csproj` |
 
+## Migração para Java, fase 2 (paridade da Foundation)
+
+Verificado em 2026-10-09: `./mvnw clean verify` com 15 testes rápidos (`*Test`) e 32 de integração (`*IT`,
+PostgreSQL 18.6 via Testcontainers), Spotless, `-Werror` e `dependency:analyze` verdes. Spectral local (mesmas
+versões da CI) sem avisos na spec gerada pelo Java. API Java contra o PostgreSQL do Compose: `/health/ready` 200.
+CI ainda não executada.
+
+| Testes .NET | Equivalente Java |
+|---|---|
+| `StartupConfigurationTests` (5) | `DataSourceConfigurationTest` (ausente, vazia, só espaços, 4 URLs malformadas com canário, sobe sem conectar) e `TraceonApplicationTest` (o `main` real: URL vazia; URL malformada fora do log) |
+| `HealthEndpointTests` (16) | `HealthEndpointIT` (banco disponível: corpos exatos, `no-store` + JSON, 405 com `Allow: GET` em 6 casos); `RefusingDatabaseHealthIT` e `SilentDatabaseHealthIT` (liveness 200, readiness 503 em menos de 10 s sem diagnóstico, log sem a senha) |
+| `HttpPipelineTests` (3) | `HttpPipelineIT.unknownRouteReturnsProblemDetailsWithoutInternalDetails`, `HttpPipelineIT.openApiDocumentIsNotExposedWithoutTheApiDocsProfile`; o 200 no profile `api-docs` é exercitado pelo `OpenApiDocumentIT` |
+| `UnhandledExceptionTests` (3) | `UnhandledExceptionIT` (500 genérico com `traceId`; log com o mesmo id). Só na readiness: a liveness não executa nada que possa lançar |
+| `SecurityHeadersTests` (4) | `HttpPipelineIT.responsesCarrySecurityHeaders` (live 200, ready 503, 404) e `UnhandledExceptionIT.unhandledExceptionResponseKeepsSecurityHeaders` |
+| `RouteInventoryTests` (3) | `RouteInventoryIT` (configuração padrão = produção) e `OpenApiDocumentIT.apiDocsProfileAddsOnlyTheSpecRoutesToTheAllowlist` |
+| `OpenApiDocumentTests` (3) + passo de drift da CI | `OpenApiDocumentIT` (duas operações, identidade e respostas de cada uma, drift contra `docs/api/openapi.json`) |
+| `DependencyRuleTests` (8) | `ArchitectureTest` (4) e `ModularityTest` (1) |
+| — (novos) | `HttpPipelineIT.errorRouteCalledDirectlyLooksLikeAnUnknownRoute`; `MigrationsAtStartupIT.startupDoesNotRunFlyway` |
+
 ## Verificações pendentes (não executadas)
 
 | Item | Status | Motivo e próximo passo |

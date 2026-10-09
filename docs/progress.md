@@ -7,8 +7,8 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 
 | Etapa | Status | Observações |
 |---|---|---|
-| 1. Foundation | Concluída em 2026-10-09, com pendências | API, PostgreSQL local, frontend integrado, testes e CI configurada. Pendentes: execução real da CI (inclui drift da spec e Spectral) e validação do Dependabot (veja [acceptance.md](acceptance.md)). Revisão das ADRs pelo responsável também pendente |
-| 2. Identity & Sites | Não iniciada | Próximo incremento sugerido (abaixo) |
+| 1. Foundation | Concluída em 2026-10-09 | API, PostgreSQL local, frontend integrado, testes e CI executada no GitHub (os 4 jobs passaram). Pendente só a revisão das ADRs pelo responsável (veja [acceptance.md](acceptance.md)) |
+| 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); próximo passo: STRIDE no modelo de ameaças e contrato OpenAPI, ainda sem código |
 | 3. Monitoring | Não iniciada | Depende da etapa 2 (sites com controle comprovado) |
 | 4. Integrity | Não iniciada | Depende da etapa 3 |
 | 5. Findings & Notifications | Não iniciada | Depende da etapa 4 |
@@ -27,25 +27,23 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 - PostgreSQL 18 no Docker Compose (loopback), configuração por User Secrets/variável de ambiente com falha na partida.
 - Frontend React com o painel "Estado do sistema" (carregando, operacional, banco indisponível, API sem resposta,
   resposta inesperada), acessível por teclado, validado em 1200 px e 400 px.
-- CI (backend, frontend, api-spec, gitleaks) e Dependabot configurados, **ainda não executados**.
+- CI (backend, frontend, api-spec, gitleaks) executada no GitHub e Dependabot ativo (PRs #1 e #2).
 - ADRs 0001 a 0007.
 
-## Próximo incremento sugerido: etapa 2, Identity & Sites
+## Etapa 2, Identity & Sites
 
 Escopo (do roteiro): identidade, organizações, permissões, cadastro de sites e comprovação de controle, com
-isolamento testado. Fica para o responsável aprovar o escopo antes de começar. Não está implementado nada disso.
+isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 
-### Decisões que exigirão o responsável
+### Decisões (tomadas em 2026-10-09, ver ADR 0008)
 
-| Decisão | Opções a comparar (a apresentar com prós e contras) | Por que importa |
-|---|---|---|
-| Provedor de identidade | Serviço gerenciado/OIDC (candidatos a levantar na documentação oficial) × ASP.NET Core Identity próprio | O prompt exige mecanismos consolidados e proíbe autenticação improvisada; custo, vínculo ao Azure e esforço de operação diferem muito |
-| Modelo de sessão do frontend | Cookie de sessão com backend como client OAuth (BFF) × token no navegador | Define CSRF, armazenamento de credencial e o que o proxy do Vite precisa encaminhar |
-| Modelo de organização e papéis | Papéis mínimos (dono, membro) × permissões granulares | Base da autorização por organização e recurso e dos testes de isolamento |
-| Esquema do banco por módulo | Um schema por módulo no mesmo `DbContext` (ADR 0001) e política de migrations | Primeira migration da história do projeto; difícil de desfazer |
-| Comprovação de controle do site | Meta tag, arquivo `.well-known`, registro DNS TXT: qual o primeiro método | O prompt exige autorização do site antes de qualquer coleta; a Strategy só se justifica com o segundo método |
-| Modelo de ameaças e dados pessoais | STRIDE do cadastro e da comprovação; quais dados pessoais são guardados e por quanto tempo | Feature com permissão e URL fornecida por usuário (risco de SSRF já na validação de URL) |
-| Validação da CI | Repositório publicado como privado (BipoXDXD/traceon) em 2026-10-09; os jobs não iniciaram por bloqueio de cobrança do GitHub Actions. Opções: tornar público (Actions gratuito) × regularizar a cobrança | Pendência herdada da Foundation |
+| Decisão | Escolha |
+|---|---|
+| Provedor de identidade e sessão | ASP.NET Core Identity com cookie `HttpOnly`/`Secure`/`SameSite=Strict` e antiforgery |
+| Organização e papéis | `Membership(user, organization, role)` com `Owner` e `Member`; várias organizações por usuário |
+| Banco e migrations | Schemas `identity` e `sites` no mesmo `DbContext`; PK UUIDv7; migrations aplicadas por comando explícito |
+| Comprovação de controle do site | DNS TXT primeiro; sem HTTP à URL do usuário nesta etapa |
+| Dados pessoais | Só e-mail e hash de senha, removidos com a conta; STRIDE no modelo de ameaças antes do código (pendente) |
 
 ### Pendências de API e segurança herdadas da Foundation
 
@@ -87,7 +85,6 @@ aqui, conforme o ADR 0002.
 
 ## Dívidas e riscos em aberto
 
-- CI nunca executada: o repositório privado existe, mas o GitHub recusou iniciar os jobs por cobrança da conta (2026-10-09). O Dependabot iniciou.
 - Controles sem teste automatizado: banco só no loopback e segredo fora do bundle (threat-model, linhas 13 e 15).
 - Risco aceito: `/health/ready` sem rate limit (R1), `AllowedHosts: "*"` (R2), exceção completa no log do 500 (R3).
 - Pasta `infrastructure/` ainda inexistente; prevista no prompt mestre e sem conteúdo até haver infraestrutura como código.

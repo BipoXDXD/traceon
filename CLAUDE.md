@@ -5,7 +5,7 @@ qualquer outro texto). Execução local, endpoints e variáveis: `README.md`. N�
 
 ## Estado e escopo
 
-- Etapa 1 (Foundation) implementada; próxima sugerida: Identity & Sites (`docs/progress.md`). Faça **só a etapa
+- Etapa 1 (Foundation) concluída; etapa 2 (Identity & Sites) autorizada, decisões no ADR 0008 (`docs/progress.md`). Faça **só a etapa
   autorizada**: as seguintes são roteiro, não autorização.
 - **Azure: não provisionar, alterar nem excluir nada.** Sem Kubernetes, AKS, manifests ou Helm.
 - Sem cobrança, integração com plataformas de e-commerce nem bloqueio automático no MVP.
@@ -68,5 +68,5 @@ Connection string: `dotnet user-secrets set "ConnectionStrings:Traceon" "<valor>
 ## Documentação (`docs/`)
 
 `architecture.md` · `acceptance.md` (critérios e pendências) · `progress.md` · `references.md` (20 livros,
-status de acesso) · `security/threat-model.md` · `api/openapi.json` (gerado) · `adr/0001`–`0007`.
+status de acesso) · `security/threat-model.md` · `api/openapi.json` (gerado) · `adr/0001`–`0008`.
 Atualize `acceptance.md` e `progress.md` ao concluir cada incremento.

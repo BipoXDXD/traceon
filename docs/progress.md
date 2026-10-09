@@ -9,7 +9,7 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 |---|---|---|
 | 1. Foundation | Concluída em 2026-10-09 | API, PostgreSQL local, frontend integrado, testes e CI executada no GitHub (os 4 jobs passaram). Pendente só a revisão das ADRs pelo responsável (veja [acceptance.md](acceptance.md)) |
 | 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); STRIDE escrito (ameaças 20 a 37, testes planejados); próximo passo: contrato OpenAPI, ainda sem código |
-| Migração do backend para Java | Fase 2 feita localmente | Aprovada em 2026-10-09 ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), [plano](planejamento-migracao-java.md)). Fase 0 no PR #5; fases 1 e 2 na branch `feat/backend-java` (PR #6). Fase 2: paridade da Foundation em Java (47 testes) e spec gerada pelo Java, com `./mvnw verify` verde local e na CI; próximo: fase 3 (corte). A etapa 2 recomeça em Java depois do corte |
+| Migração do backend para Java | Fase 3 (corte) feita localmente | Aprovada em 2026-10-09 ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), [plano](planejamento-migracao-java.md)). Fase 0 no PR #5; fases 1 a 3 na branch `feat/backend-java` (PR #6). O backend .NET saiu; README, CLAUDE.md, arquitetura e modelo de ameaças descrevem o Java. Próximo: fase 4 (verificação ponta a ponta no navegador). A etapa 2 recomeça em Java depois dela |
 | 3. Monitoring | Não iniciada | Depende da etapa 2 (sites com controle comprovado) |
 | 4. Integrity | Não iniciada | Depende da etapa 3 |
 | 5. Findings & Notifications | Não iniciada | Depende da etapa 4 |
@@ -17,15 +17,19 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 
 ## O que a Foundation entregou
 
-- Solução .NET com `Domain`, `Application`, `Infrastructure` e `Api` (os dois primeiros vazios de propósito) e dois
-  projetos de teste; regra da dependência verificada por testes.
-- `/health/live` e `/health/ready` como `MapGet` (só GET; 405 nos outros métodos) com contrato fixo, sonda de banco
-  com timeout e Problem Details (404, 405, 500 genérico com `traceId`).
-- OpenAPI code-first gerado no build e versionado em `docs/api/openapi.json` (drift check e Spectral + OWASP na CI);
-  endpoint `/openapi/v1.json` só em Development.
+Entregue em .NET e migrada para Java 25 + Spring Boot 4.1.1 com os mesmos comportamentos e testes equivalentes
+([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md)). Estado atual:
+
+- Um módulo Maven com os pacotes técnicos `health` e `shared` (nenhum módulo de negócio ainda); regra da dependência
+  e fronteiras verificadas por ArchUnit e Spring Modulith.
+- `/health/live` e `/health/ready` (só GET; 405 nos outros métodos) com contrato fixo, sonda de banco com timeout e
+  Problem Details (404, 405, 500 genérico com `traceId`).
+- OpenAPI code-first (springdoc) versionado em `docs/api/openapi.json` (drift conferido por teste e Spectral + OWASP
+  na CI); endpoint `/openapi/v1.json` só no profile `api-docs`.
 - Headers de segurança em toda resposta, inventário de rotas como fitness function e
   [modelo de ameaças](security/threat-model.md) com um teste (ou pendência) por mitigação.
-- PostgreSQL 18 no Docker Compose (loopback), configuração por User Secrets/variável de ambiente com falha na partida.
+- PostgreSQL 18 no Docker Compose (loopback), configuração por variáveis de ambiente (`SPRING_DATASOURCE_*`) com falha
+  na partida.
 - Frontend React com o painel "Estado do sistema" (carregando, operacional, banco indisponível, API sem resposta,
   resposta inesperada), acessível por teclado, validado em 1200 px e 400 px.
 - CI (backend, frontend, api-spec, gitleaks) executada no GitHub e Dependabot ativo (PRs #1 e #2).
@@ -40,7 +44,7 @@ isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 
 | Decisão | Escolha |
 |---|---|
-| Provedor de identidade e sessão | ASP.NET Core Identity com cookie `HttpOnly`/`Secure`/`SameSite=Strict` e antiforgery |
+| Provedor de identidade e sessão | Spring Security 7 + Spring Session JDBC + fluxos de conta próprios (revisado pelo ADR 0009, D6; era ASP.NET Core Identity), cookie `HttpOnly`/`Secure`/`SameSite=Strict` e CSRF (`csrf.spa()`) |
 | Organização e papéis | `Membership(user, organization, role)` com `Owner` e `Member`; várias organizações por usuário |
 | Banco e migrations | Schemas `identity` e `sites` no mesmo `DbContext`; PK UUIDv7; migrations aplicadas por comando explícito |
 | Comprovação de controle do site | DNS TXT primeiro; sem HTTP à URL do usuário nesta etapa |
@@ -57,9 +61,9 @@ Itens que a Foundation não pôde fazer por falta de entrada, escrita ou autenti
 
 **Etapa 2:**
 
-- DTO de entrada estrito: `UnmappedMemberHandling.Disallow` no JSON; campo desconhecido, `id`, `status`, dono ou
+- DTO de entrada estrito: `FAIL_ON_UNKNOWN_PROPERTIES` do Jackson; campo desconhecido, `id`, `status`, dono ou
   papel vindos do cliente → 400, banco inalterado.
-- Autenticação com mecanismo consolidado e *fallback policy* que exige usuário autenticado; o `RouteInventoryTests`
+- Autenticação com mecanismo consolidado e `SecurityFilterChain` que termina em `anyRequest().authenticated()`; o `RouteInventoryIT`
   passa a exigir **401** sem credencial para toda rota fora da allowlist pública.
 - Rate limit (login e endpoints caros; 429 com `Retry-After`) e a decisão sobre limite ou cache em
   `/health/ready` (risco R1, aceito na Foundation). Se health ganhar limite, as regras OWASP de rate limit voltam
@@ -71,7 +75,7 @@ Itens que a Foundation não pôde fazer por falta de entrada, escrita ou autenti
 
 **Etapa 6 (Cloud):**
 
-- `AllowedHosts` com os hosts reais (hoje `*`, risco R2), HSTS e `servers` por ambiente na spec (as regras
+- Allowlist de `Host` com os hosts reais (hoje qualquer um, risco R2), HSTS e `servers` por ambiente na spec (as regras
   `owasp:api9:2023-inventory-*` voltam), `info-contact` com o canal público.
 - CORS × reverse proxy em produção (o Vite só resolve em desenvolvimento; ADR 0006) e CSP do frontend na hospedagem
   (os headers atuais protegem só a API).
@@ -91,5 +95,5 @@ aqui, conforme o ADR 0002.
 ## Dívidas e riscos em aberto
 
 - Controles sem teste automatizado: banco só no loopback e segredo fora do bundle (threat-model, linhas 13 e 15).
-- Risco aceito: `/health/ready` sem rate limit (R1), `AllowedHosts: "*"` (R2), exceção completa no log do 500 (R3).
+- Risco aceito: `/health/ready` sem rate limit (R1), qualquer `Host` aceito (R2), exceção completa no log do 500 (R3).
 - Pasta `infrastructure/` ainda inexistente; prevista no prompt mestre e sem conteúdo até haver infraestrutura como código.

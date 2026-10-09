@@ -6,6 +6,10 @@ não executada fica **Pendente**, explicitamente.
 
 Legenda: **Atendido** = executado e observado; **Pendente** = não executado ou não coberto.
 
+As evidências das seções "Critério de aceite geral", "Escopo executável" e "Convenções de API e segurança" são as
+da entrega original, em .NET. O backend foi migrado para Java ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md));
+a paridade teste a teste e as evidências em Java estão nas seções "Migração para Java", abaixo.
+
 ## Critério de aceite geral
 
 | Critério | Status | Evidência |
@@ -89,6 +93,19 @@ CI do PR #6 (run 37943341119): os 5 jobs passaram, inclusive o `backend-java` co
 | `DependencyRuleTests` (8) | `ArchitectureTest` (4) e `ModularityTest` (1) |
 | — (novos) | `HttpPipelineIT.errorRouteCalledDirectlyLooksLikeAnUnknownRoute`; `MigrationsAtStartupIT.startupDoesNotRunFlyway` |
 
+## Migração para Java, fase 3 (corte)
+
+Verificado em 2026-10-09, localmente.
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Backend .NET removido | Atendido | Saíram `backend/src/Traceon.*`, `backend/tests`, `Traceon.slnx`, `Directory.*.props` e `global.json`; job .NET fora da CI; Dependabot de `nuget` para `maven` |
+| API na porta 5120 | Atendido | `server.port=5120`; os passos do README (`.env` carregado no shell + `./mvnw spring-boot:run`) subiram a API, com `/health/ready` 200 contra o PostgreSQL do Compose e `/openapi/v1.json` 200 no profile `api-docs` |
+| Documentação descreve o Java | Atendido | README, CLAUDE.md, `.env.example`, `architecture.md`, `progress.md` e o modelo de ameaças (nomes dos testes Java, mitigações da etapa 2 com Spring Security, Spring Session e Bucket4j; R7 e R8 tratados pelo desenho) |
+| `./mvnw verify` sem o .NET | Atendido | `./mvnw clean verify` depois da remoção: 15 testes rápidos e 32 de integração, BUILD SUCCESS |
+| CI | **Pendente** | Não executada após o corte |
+| Contrato da etapa 2 (PR #3) | **Pendente** | Revisão escrita na branch do PR #3 (Spring Security, Spring Session JDBC, `csrf.spa()` com `GET /api/csrf`, Jackson estrito, Bucket4j; formato de `errors` mantido), ainda sem commit |
+
 ## Verificações pendentes (não executadas)
 
 | Item | Status | Motivo e próximo passo |
@@ -98,6 +115,7 @@ CI do PR #6 (run 37943341119): os 5 jobs passaram, inclusive o `backend-java` co
 | Rate limit, DTO estrito, autenticação, `ETag`/`If-Match`, Schemathesis, `oasdiff breaking` | Não configurados | Dependem de entrada, escrita ou autenticação; entram na etapa 2 ([progress.md](progress.md)) |
 | Versões do Spectral fora do Dependabot | Limitação conhecida | Ficam no `env:` do workflow; atualização manual (risco R4 do modelo de ameaças) |
 | Cobertura de código e mutation testing | Não configurados | Nenhuma ferramenta nem limiar definidos na CI |
+| Hibernate lendo metadados do banco na partida | Sem teste | Desligado por configuração; voltar a ligar deixaria a subida lenta com banco mudo, sem falhar teste algum |
 
 ## Limitações conhecidas
 

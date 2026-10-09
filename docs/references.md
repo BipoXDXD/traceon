@@ -63,7 +63,7 @@ responsável: manter, ou trocar por referência da lista (por exemplo *Fundament
 |---|---|
 | WCAG | Contraste: `frontend/src/theme.test.ts` verifica pares de cor contra limiares de contraste WCAG AA |
 | OWASP ASVS | Previsto para a etapa 2 (identidade e autorização); ainda não aplicado |
-| Documentação oficial (.NET, ASP.NET Core, EF Core, Npgsql, Vite, Vitest, PostgreSQL) | Confirmação de versões, APIs e práticas atuais |
+| Documentação oficial (Java, Spring Boot, Spring Framework, Spring Security, Hibernate, springdoc, Testcontainers, Vite, Vitest, PostgreSQL) | Confirmação de versões, APIs e práticas atuais |
 
 ## Como citar nas ADRs
 

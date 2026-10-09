@@ -272,6 +272,11 @@ schema e detalhes do gerador; a forma das respostas não muda (o frontend é a p
 5. Contrato da etapa 2 (PR #3): troca `UserManager`/`SignInManager` por Spring Security e o header antiforgery passa
    a ser o padrão `csrf.spa()`.
 
+**Execução (2026-10-09), branch `feat/backend-java`:** itens 1 a 4 feitos; porta 5120 mantida por escolha do
+responsável. Para desenvolvimento, as variáveis `SPRING_DATASOURCE_*` ficam no `.env` (derivadas das `POSTGRES_*`)
+e o README o carrega no shell antes do `./mvnw spring-boot:run`; nada de `application-local.properties`. **Item 5
+pendente:** o contrato da etapa 2 vive na branch do PR #3 e recebe a troca num commit próprio lá.
+
 ### Fase 4: verificação
 
 1. CI verde nos 4 jobs; `./mvnw verify` limpo localmente.

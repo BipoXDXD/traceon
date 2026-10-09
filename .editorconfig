@@ -14,6 +14,10 @@ indent_size = 4
 [*.{csproj,props,targets,slnx}]
 indent_size = 2
 
+# Java segue o Palantir Java Format (Spotless); o POM acompanha a indentação
+[{*.java,pom.xml}]
+indent_size = 4
+
 [*.md]
 trim_trailing_whitespace = false
 

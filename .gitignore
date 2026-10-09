@@ -28,3 +28,6 @@ riderModule.iml
 
 # Saídas locais do Playwright MCP
 .playwright-mcp/
+
+# Java / Maven
+target/

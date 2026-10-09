@@ -8,7 +8,7 @@ autorização explícita; o roteiro não autoriza implementar etapas futuras.
 | Etapa | Status | Observações |
 |---|---|---|
 | 1. Foundation | Concluída em 2026-10-09 | API, PostgreSQL local, frontend integrado, testes e CI executada no GitHub (os 4 jobs passaram). Pendente só a revisão das ADRs pelo responsável (veja [acceptance.md](acceptance.md)) |
-| 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); STRIDE escrito (ameaças 20 a 37, testes planejados); próximo passo: contrato OpenAPI, ainda sem código |
+| 2. Identity & Sites | Em andamento | Decisões tomadas em 2026-10-09 ([ADR 0008](adr/0008-identidade-organizacoes-e-comprovacao-de-sites.md)); STRIDE escrito (ameaças 20 a 37, testes planejados) e [contrato](api/contrato-etapa-2.md) em rascunho para revisão; próximo passo: tracer bullet (cadastro → login → organização → site não verificado) |
 | Migração do backend para Java | Concluída em 2026-10-09 | Aprovada e executada em 2026-10-09 ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), [plano](planejamento-migracao-java.md)): planejamento (#4), fase 0 (#5) e fases 1 a 4 (#6) mesclados na `main`, com a CI verde. Contrato da etapa 2 revisado no PR #3, aguardando revisão. A etapa 2 recomeça em Java pelo tracer bullet planejado |
 | 3. Monitoring | Não iniciada | Depende da etapa 2 (sites com controle comprovado) |
 | 4. Integrity | Não iniciada | Depende da etapa 3 |
@@ -53,6 +53,8 @@ isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 | Permissões do `Member` | Lê, cadastra e verifica sites; só `Owner` remove site e exclui a organização |
 | Domínio em várias organizações | Permitido, cada uma comprova: `UNIQUE (organização, domínio)` |
 | Expiração da comprovação | Não expira nesta etapa; a etapa 3 revalida antes de coletar |
+| Endpoints de conta | Próprios sobre o Spring Security, com sessão no Spring Session JDBC e CSRF por `csrf.spa()` (revisado no corte da migração para Java, ADR 0009) |
+| Erro de validação | `ProblemDetail` com `errors` como mapa campo → mensagens (formato do `HttpValidationProblemDetails`, mantido na migração para Java) |
 
 ### Pendências de API e segurança herdadas da Foundation
 
@@ -70,7 +72,7 @@ Itens que a Foundation não pôde fazer por falta de entrada, escrita ou autenti
   para os paths de health no `.spectral.yaml`.
 - `ETag` na leitura e `If-Match` em PUT/PATCH (412 se desatualizado).
 - Schemathesis (`--checks=all`) e `oasdiff breaking` na CI, ao lado do Spectral.
-- Schema de erro próprio com lista `errors[]` (Problem Details); as regras de limite do Spectral voltam para ele.
+- ~~Schema de erro próprio com lista `errors[]`~~: decidido em 2026-10-09 usar o formato do `HttpValidationProblemDetails` (`errors` como mapa campo → mensagens), mantido em Java num `ProblemDetail`; o override do Spectral para o schema `ProblemDetail` continua.
 - Revisão de logs: allowlist de campos e canário de vazamento nos logs de requisição com dado de usuário (risco R3).
 
 **Etapa 6 (Cloud):**

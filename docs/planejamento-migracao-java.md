@@ -1,7 +1,20 @@
 # Planejamento: migração do backend para Java 25 + Spring Boot 4.1.1
 
-- **Status:** proposta para decisão (2026-10-09). Nada foi migrado. A migração só começa depois das decisões da
-  seção 3, de uma emenda ao prompt mestre e de um ADR novo.
+- **Status:** aprovado pelo responsável em 2026-10-09 (decisões abaixo). Nada foi migrado ainda; a fase 0
+  (emenda ao prompt mestre e ADR 0009) vem primeiro.
+
+**Decisões do responsável (2026-10-09), todas conforme a recomendação:**
+
+| # | Escolha |
+|---|---|
+| D1 | Emendar o prompt mestre para Java 25, Spring Boot 4.1.1, JUnit 6 e Playwright Java |
+| D3 | Mesmo repositório; pasta local movida para `~/Documents/Projetos/Java/traceon` |
+| D4 | Maven com wrapper |
+| D5 | Um módulo Maven, pacote por módulo de negócio, ArchUnit + Spring Modulith |
+| D6 | Spring Security 7 + Spring Session JDBC + fluxos de conta próprios |
+| D7 | Spring Data JPA + `JdbcClient`; Flyway em SQL, desligado na partida e aplicado por comando |
+| D8 | Manter o JSON atual do health; Actuator só em porta de gerenciamento |
+| D9 | Substituição completa na branch `feat/backend-java` |
 - **Escopo:** o backend (`backend/`) e o que depende dele: CI, Dependabot, README, CLAUDE.md, ADRs e o contrato da
   etapa 2. O frontend React, o Docker Compose, o PostgreSQL e o modelo de ameaças continuam válidos.
 
@@ -246,5 +259,5 @@ organização → site não verificado).
 
 ## 9. Próximo passo
 
-Responder D1 a D9. Com as respostas, a fase 0 (só documentos) vira um PR próprio, e a fase 1 começa numa branch
-nova.
+Fase 0 num PR próprio, só de documentos: emenda ao prompt mestre, ADR 0009, ADR 0003 marcado Superseded e notas
+nos ADRs 0001, 0005, 0007 e 0008. Depois, a mudança de pasta (D3) e a fase 1 na branch `feat/backend-java`.

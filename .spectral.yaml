@@ -34,12 +34,11 @@ overrides:
       owasp:api4:2023-rate-limit: off
       owasp:api4:2023-rate-limit-responses-429: off
 
-  # ProblemDetails é gerado pelo framework e só aparece em resposta (hoje, o 500 genérico). Os limites de
-  # tamanho miram entrada (payload grande); seguem ativos para todos os outros schemas, então o primeiro DTO de
-  # entrada da etapa 2 é cobrado. Voltam aqui se a etapa 2 publicar um schema próprio de erro (lista errors[]).
+  # ProblemDetail (RFC 9457) só aparece em resposta (hoje, o 500 genérico). Os textos já têm maxLength e o
+  # status tem faixa; title e detail são texto livre para pessoas, sem formato, padrão ou enum possível. A regra
+  # segue ativa para todos os outros schemas, então o primeiro DTO de entrada da etapa 2 é cobrado. Volta aqui se
+  # a etapa 2 publicar um schema próprio de erro (lista errors[]).
   - files:
-      - "docs/api/openapi.json#/components/schemas/ProblemDetails"
+      - "docs/api/openapi.json#/components/schemas/ProblemDetail"
     rules:
-      owasp:api4:2023-string-limit: off
       owasp:api4:2023-string-restricted: off
-      owasp:api4:2023-integer-limit: off

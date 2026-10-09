@@ -1,7 +1,7 @@
 # Planejamento: migração do backend para Java 25 + Spring Boot 4.1.1
 
-- **Status:** aprovado pelo responsável em 2026-10-09 (decisões abaixo). Nada foi migrado ainda; a fase 0
-  (emenda ao prompt mestre e ADR 0009) vem primeiro.
+- **Status:** aprovado pelo responsável em 2026-10-09 (decisões abaixo) e **executado** no mesmo dia: fases 0 a 4
+  feitas, com notas de execução em cada fase; falta o merge dos PRs #5 e #6.
 
 **Decisões do responsável (2026-10-09), todas conforme a recomendação:**
 
@@ -198,6 +198,22 @@ Cada fase termina com CI verde e commits pequenos. Os nomes de teste em Java seg
    desde o primeiro commit.
 4. Job `backend` da CI trocado: `actions/setup-java` (Temurin 25, por SHA), `./mvnw verify`, drift da spec.
 
+**Execução (2026-10-09), branch `feat/backend-java`:**
+
+- `backend/pom.xml` (parent 4.1.1, Java 25), wrapper Maven 3.9.16 com `distributionSha256Sum` (só o script
+  `mvnw`; o `mvnw.cmd` saiu, o projeto não roda em Windows). Pacote raiz `bipo.tech.traceon`.
+- Formatador: **Spotless + Palantir Java Format** (2.99.0), 120 colunas, como os docs; `spotless:check` no `verify`
+  e `./mvnw spotless:apply` para corrigir.
+- `dependency:analyze-only` com `failOnWarning` no `verify`: o código declara o que usa (`spring-boot`,
+  `spring-boot-autoconfigure`, `spring-context`); só starters e a engine do ArchUnit ficam na lista de ignorados.
+- `ArchitectureTest` (4 regras: pacote de módulo planejado, `domain` → nada, `application` → só `domain`,
+  `infrastructure` sem `api` nem web/servlet) e `ModularityTest` (`ApplicationModules.verify()`). Cada regra foi
+  vista falhando com uma violação temporária, depois removida.
+- **Desvios:** os pacotes `health` e `shared` não foram criados ainda, porque o prompt mestre proíbe pacote vazio;
+  entram na fase 2 com o comportamento. O job .NET `backend` **não** foi trocado: o job novo `backend-java` roda ao
+  lado dele até o corte (fase 3), para a paridade ser provada na CI com as duas suítes. O drift da spec continua no
+  job .NET até o Java gerar a spec (fase 2).
+
 ### Fase 2: paridade da Foundation
 
 Cada item porta o comportamento **e** o teste correspondente. O teste vem primeiro e é visto falhando.
@@ -216,6 +232,34 @@ Ao fim da fase: a spec gerada pelo Java substitui `docs/api/openapi.json`. O dif
 schema e detalhes do gerador; a forma das respostas não muda (o frontend é a prova). O `.spectral.yaml` ajusta os
 `overrides` para os nomes de schema do springdoc.
 
+**Execução (2026-10-09), branch `feat/backend-java`:** os 45 casos têm equivalente (tabela em
+[acceptance.md](acceptance.md)); `./mvnw verify` roda 15 testes rápidos e 32 de integração. Pacotes `health`
+(controller, respostas, sonda) e `shared` (`persistence`, `web`, `openapi`).
+
+- **Ordem dos testes:** o código veio antes dos testes nesta fase. Para compensar, cada comportamento foi
+  sabotado (11 sabotagens: `no-store`, header, timeout da sonda, senha no log, `traceId`, liveness consultando o
+  banco, URL malformada aceita, mensagem ecoando a URL, Flyway na partida, rota nova, pool conectando na partida)
+  e o teste correspondente falhou em todas.
+- **Configuração do banco:** `spring.datasource.url`/`username`/`password` (variáveis `SPRING_DATASOURCE_*`), com a
+  senha fora da URL. A validação fica num `DataSource` próprio (`DataSourceConfiguration`), porque a do binder do
+  Boot repete o valor no log da falha. Os testes usam `@DynamicPropertySource`, não `@ServiceConnection`, para
+  passar pela mesma validação.
+- **Partida sem banco:** `ddl-auto=none` (e não `validate`, como dizia a D7) e Hibernate sem leitura de metadados
+  na subida, para a aplicação subir com o banco fora do ar (ADR 0004). A validação de schema volta com as
+  primeiras entidades, nos testes de integração. **Lacuna:** nenhum teste barra o Hibernate voltando a ler
+  metadados na partida; o efeito seria uma subida lenta, não uma falha.
+- **Headers de segurança** por filtro próprio, não pelo Spring Security: sem autenticação, ele só escreveria
+  headers e mudaria o 405 para 403 (CSRF). Entra na etapa 2, com a autenticação (nota no ADR 0007).
+- **Correlação:** Micrometer Tracing com OpenTelemetry (padrão do `duora-api`): trace id W3C no log ECS e no
+  `traceId` do 500. Logs em JSON por padrão; o profile `plain-logs` volta ao texto. Nada é exportado sem coletor.
+- **Actuator** não entrou: a Foundation não tem métricas, e o health é o controller próprio (D8).
+- **Spec:** `docs/api/openapi.json` passou a ser gerada pelo Java (`OpenApiDocumentIT` grava
+  `backend/target/openapi.json` e falha no drift). O csproj .NET deixou de gerá-la e o passo de drift saiu do job
+  .NET. Diferenças para a spec .NET: `ProblemDetail` (antes `ProblemDetails`) com limites e `traceId`, enum de
+  status inline, `openapi` 3.1.0. O `.spectral.yaml` desliga só `string-restricted` nesse schema; os limites de
+  tamanho voltaram a valer nele. Spectral local sem avisos.
+- `/error` (destino interno do Tomcat) aparece no inventário de rotas; chamado direto responde 404.
+
 ### Fase 3: corte
 
 1. Apaga `backend/` .NET, `global.json` e `Directory.Packages.props`; Dependabot de `nuget` para `maven`.
@@ -228,12 +272,20 @@ schema e detalhes do gerador; a forma das respostas não muda (o frontend é a p
 5. Contrato da etapa 2 (PR #3): troca `UserManager`/`SignInManager` por Spring Security e o header antiforgery passa
    a ser o padrão `csrf.spa()`.
 
+**Execução (2026-10-09), branch `feat/backend-java`:** itens 1 a 4 feitos; porta 5120 mantida por escolha do
+responsável. Para desenvolvimento, as variáveis `SPRING_DATASOURCE_*` ficam no `.env` (derivadas das `POSTGRES_*`)
+e o README o carrega no shell antes do `./mvnw spring-boot:run`; nada de `application-local.properties`. **Item 5
+pendente:** o contrato da etapa 2 vive na branch do PR #3 e recebe a troca num commit próprio lá.
+
 ### Fase 4: verificação
 
 1. CI verde nos 4 jobs; `./mvnw verify` limpo localmente.
 2. Validação ponta a ponta como na Foundation: `docker compose up`, API, `npm run dev`, navegador em 1200 px e 400 px
    com banco ligado e desligado.
 3. `acceptance.md` atualizado com evidências; PR único `feat/backend-java` com a paridade descrita.
+
+**Execução (2026-10-09):** itens 1 e 2 feitos (evidências em [acceptance.md](acceptance.md), fase 4). O item 3 é
+o PR #6, com a base no PR #5 (fase 0); falta a revisão do responsável e o merge.
 
 Depois disso a etapa 2 recomeça em Java pelo tracer bullet já planejado (cadastro → confirmação → login →
 organização → site não verificado).

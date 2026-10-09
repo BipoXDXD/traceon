@@ -3,12 +3,12 @@ version: 2
 # Semanal, minor e patch agrupados num PR por ecossistema. Major nunca é automático:
 # exige decisão e PR manual (docs/prompt-mestre.md, seção 2).
 updates:
-  - package-ecosystem: nuget
+  - package-ecosystem: maven
     directory: /backend
     schedule:
       interval: weekly
     groups:
-      nuget-minor-patch:
+      maven-minor-patch:
         update-types: [minor, patch]
     ignore:
       - dependency-name: "*"

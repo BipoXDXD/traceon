@@ -4,7 +4,7 @@
 - **Relacionados:** [ADR 0004](0004-health-checks-liveness-e-readiness.md) (desenho do health),
   [ADR 0006](0006-integracao-frontend-proxy-e-configuracao.md) (proxy, sem CORS),
   [modelo de ameaças](../security/threat-model.md).
-- **Revisão (2026-10-09):** as convenções continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). A spec segue code-first e versionada, gerada por springdoc num teste de integração que compara com `docs/api/openapi.json`; headers de segurança vêm de `http.headers(...)` do Spring Security; Problem Details por `ProblemDetail` + `@RestControllerAdvice`.
+- **Revisão (2026-10-09):** as convenções continuam ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). A spec segue code-first e versionada, gerada por springdoc num teste de integração que compara com `docs/api/openapi.json`; Problem Details pelo `ProblemDetail` do Spring (404 e 405 pelo handler do MVC; 500 pelo `ProblemDetailErrorController`, com `traceId`); spec em `/openapi/v1.json` só no profile `api-docs`. Headers de segurança: até a etapa 2 por um filtro próprio (`SecurityHeadersFilter`), porque não há autenticação e o Spring Security só entraria para escrever headers; com a autenticação, passam a `http.headers(...)` do Spring Security.
 
 ## Contexto
 

@@ -6,6 +6,10 @@ não executada fica **Pendente**, explicitamente.
 
 Legenda: **Atendido** = executado e observado; **Pendente** = não executado ou não coberto.
 
+As evidências das seções "Critério de aceite geral", "Escopo executável" e "Convenções de API e segurança" são as
+da entrega original, em .NET. O backend foi migrado para Java ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md));
+a paridade teste a teste e as evidências em Java estão nas seções "Migração para Java", abaixo.
+
 ## Critério de aceite geral
 
 | Critério | Status | Evidência |
@@ -56,6 +60,68 @@ Critérios adicionais da rodada de regras de API, design e segurança. Não vêm
 | Dependabot validado pelo GitHub | Atendido | Abriu os PRs #1 (npm) e #2 (NuGet) em 2026-10-09; o #2 passou na CI e o #1 caiu no teste intermitente corrigido em `StartupConfigurationTests` |
 | Modelo de ameaças com teste por mitigação | Atendido | [security/threat-model.md](security/threat-model.md): 19 ameaças, cada uma com teste, passo de CI, "sem teste — pendente" ou risco aceito |
 
+## Migração para Java, fase 1 (esqueleto)
+
+Branch `feat/backend-java` ([ADR 0009](adr/0009-migracao-do-backend-para-java-e-spring-boot.md), plano seção 6).
+Verificado em 2026-10-09 com Temurin 25.0.4 e Maven 3.9.16 (wrapper).
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Projeto Maven com parent Boot 4.1.1, Java 25 e wrapper | Atendido | `./mvnw verify`: BUILD SUCCESS; o jar sobe (`Started TraceonApplication in 0.544 seconds`) |
+| Zero aviso do compilador | Atendido | `-Xlint:all` + `failOnWarning`; um raw type temporário derrubou a compilação (`warnings found and -Werror specified`) |
+| Formatador em modo `check` | Atendido | `spotless:check` no `verify` acusou violação antes do `spotless:apply` |
+| Dependências declaradas = usadas | Atendido | `dependency:analyze-only` falhou com `spring-context` usado e não declarado; corrigido declarando |
+| Regra da dependência e fronteira de módulos desde o primeiro commit | Atendido | `ArchitectureTest` (4) e `ModularityTest` (1) verdes; com classes de violação temporárias, os 5 falharam |
+| Job `backend-java` na CI | Atendido | PR #6, run 37939966329: os 5 jobs passaram, inclusive o .NET. A primeira execução (run 37939618198) derrubou o teste .NET que tratava toda pasta de `backend/src` como projeto; corrigido para contar só pasta com `.csproj` |
+
+## Migração para Java, fase 2 (paridade da Foundation)
+
+Verificado em 2026-10-09: `./mvnw clean verify` com 15 testes rápidos (`*Test`) e 32 de integração (`*IT`,
+PostgreSQL 18.6 via Testcontainers), Spotless, `-Werror` e `dependency:analyze` verdes. Spectral local (mesmas
+versões da CI) sem avisos na spec gerada pelo Java. API Java contra o PostgreSQL do Compose: `/health/ready` 200.
+CI do PR #6 (run 37943341119): os 5 jobs passaram, inclusive o `backend-java` com os testes de integração e o drift.
+
+| Testes .NET | Equivalente Java |
+|---|---|
+| `StartupConfigurationTests` (5) | `DataSourceConfigurationTest` (ausente, vazia, só espaços, 4 URLs malformadas com canário, sobe sem conectar) e `TraceonApplicationTest` (o `main` real: URL vazia; URL malformada fora do log) |
+| `HealthEndpointTests` (16) | `HealthEndpointIT` (banco disponível: corpos exatos, `no-store` + JSON, 405 com `Allow: GET` em 6 casos); `RefusingDatabaseHealthIT` e `SilentDatabaseHealthIT` (liveness 200, readiness 503 em menos de 10 s sem diagnóstico, log sem a senha) |
+| `HttpPipelineTests` (3) | `HttpPipelineIT.unknownRouteReturnsProblemDetailsWithoutInternalDetails`, `HttpPipelineIT.openApiDocumentIsNotExposedWithoutTheApiDocsProfile`; o 200 no profile `api-docs` é exercitado pelo `OpenApiDocumentIT` |
+| `UnhandledExceptionTests` (3) | `UnhandledExceptionIT` (500 genérico com `traceId`; log com o mesmo id). Só na readiness: a liveness não executa nada que possa lançar |
+| `SecurityHeadersTests` (4) | `HttpPipelineIT.responsesCarrySecurityHeaders` (live 200, ready 503, 404) e `UnhandledExceptionIT.unhandledExceptionResponseKeepsSecurityHeaders` |
+| `RouteInventoryTests` (3) | `RouteInventoryIT` (configuração padrão = produção) e `OpenApiDocumentIT.apiDocsProfileAddsOnlyTheSpecRoutesToTheAllowlist` |
+| `OpenApiDocumentTests` (3) + passo de drift da CI | `OpenApiDocumentIT` (duas operações, identidade e respostas de cada uma, drift contra `docs/api/openapi.json`) |
+| `DependencyRuleTests` (8) | `ArchitectureTest` (4) e `ModularityTest` (1) |
+| — (novos) | `HttpPipelineIT.errorRouteCalledDirectlyLooksLikeAnUnknownRoute`; `MigrationsAtStartupIT.startupDoesNotRunFlyway` |
+
+## Migração para Java, fase 3 (corte)
+
+Verificado em 2026-10-09, localmente.
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Backend .NET removido | Atendido | Saíram `backend/src/Traceon.*`, `backend/tests`, `Traceon.slnx`, `Directory.*.props` e `global.json`; job .NET fora da CI; Dependabot de `nuget` para `maven` |
+| API na porta 5120 | Atendido | `server.port=5120`; os passos do README (`.env` carregado no shell + `./mvnw spring-boot:run`) subiram a API, com `/health/ready` 200 contra o PostgreSQL do Compose e `/openapi/v1.json` 200 no profile `api-docs` |
+| Documentação descreve o Java | Atendido | README, CLAUDE.md, `.env.example`, `architecture.md`, `progress.md` e o modelo de ameaças (nomes dos testes Java, mitigações da etapa 2 com Spring Security, Spring Session e Bucket4j; R7 e R8 tratados pelo desenho) |
+| `./mvnw verify` sem o .NET | Atendido | `./mvnw clean verify` depois da remoção: 15 testes rápidos e 32 de integração, BUILD SUCCESS |
+| CI | Atendido | PR #6, run 37945435515: os 4 jobs passaram sem o .NET (backend, frontend, api-spec, secrets) |
+| Contrato da etapa 2 (PR #3) | Atendido | Commit `7371597` no PR #3 (Spring Security, Spring Session JDBC, `csrf.spa()` com `GET /api/csrf`, Jackson estrito, Bucket4j; formato de `errors` mantido); CI do PR #3 verde. Aguarda sua revisão |
+
+## Migração para Java, fase 4 (verificação ponta a ponta)
+
+Verificado em 2026-10-09: `docker compose up`, API Java com `./mvnw spring-boot:run` (porta 5120, variáveis
+`SPRING_DATASOURCE_*` do `.env.example`) e `npm run dev`, navegador (Playwright, Chromium) em `http://localhost:5173`.
+O frontend não mudou: o mesmo parse do contrato leu as respostas da API Java.
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Operacional em 1200 px e 400 px | Atendido | "API e banco de dados respondendo"; API "Respondendo", banco "Disponível" |
+| Banco parado | Atendido | `docker compose stop postgres` → "A API responde, mas o banco de dados está indisponível" (`ready` 503 pelo proxy), nas duas larguras |
+| API parada | Atendido | Processo da API encerrado → "A API não está respondendo", banco "Desconhecido" (proxy 502), nas duas larguras |
+| Teclado e foco visível | Atendido | Tab até "Verificar novamente" (`:focus-visible`, anel visível) e Enter refez a verificação |
+| Sem rolagem horizontal em 400 px | Atendido | `scrollWidth` = 400 nos três estados |
+| Console sem erros inesperados | Atendido | Só os 503 e 502 de rede dos estados provocados |
+| CI verde e `./mvnw verify` limpo | Atendido | Ver as fases 2 e 3 (runs 37943341119 e 37945435515) |
+
 ## Verificações pendentes (não executadas)
 
 | Item | Status | Motivo e próximo passo |
@@ -65,6 +131,7 @@ Critérios adicionais da rodada de regras de API, design e segurança. Não vêm
 | Rate limit, DTO estrito, autenticação, `ETag`/`If-Match`, Schemathesis, `oasdiff breaking` | Não configurados | Dependem de entrada, escrita ou autenticação; entram na etapa 2 ([progress.md](progress.md)) |
 | Versões do Spectral fora do Dependabot | Limitação conhecida | Ficam no `env:` do workflow; atualização manual (risco R4 do modelo de ameaças) |
 | Cobertura de código e mutation testing | Não configurados | Nenhuma ferramenta nem limiar definidos na CI |
+| Hibernate lendo metadados do banco na partida | Sem teste | Desligado por configuração; voltar a ligar deixaria a subida lenta com banco mudo, sem falhar teste algum |
 
 ## Limitações conhecidas
 

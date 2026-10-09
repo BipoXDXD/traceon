@@ -106,6 +106,22 @@ Verificado em 2026-10-09, localmente.
 | CI | Atendido | PR #6, run 37945435515: os 4 jobs passaram sem o .NET (backend, frontend, api-spec, secrets) |
 | Contrato da etapa 2 (PR #3) | Atendido | Commit `7371597` no PR #3 (Spring Security, Spring Session JDBC, `csrf.spa()` com `GET /api/csrf`, Jackson estrito, Bucket4j; formato de `errors` mantido); CI do PR #3 verde. Aguarda sua revisão |
 
+## Migração para Java, fase 4 (verificação ponta a ponta)
+
+Verificado em 2026-10-09: `docker compose up`, API Java com `./mvnw spring-boot:run` (porta 5120, variáveis
+`SPRING_DATASOURCE_*` do `.env.example`) e `npm run dev`, navegador (Playwright, Chromium) em `http://localhost:5173`.
+O frontend não mudou: o mesmo parse do contrato leu as respostas da API Java.
+
+| Critério | Status | Evidência |
+|---|---|---|
+| Operacional em 1200 px e 400 px | Atendido | "API e banco de dados respondendo"; API "Respondendo", banco "Disponível" |
+| Banco parado | Atendido | `docker compose stop postgres` → "A API responde, mas o banco de dados está indisponível" (`ready` 503 pelo proxy), nas duas larguras |
+| API parada | Atendido | Processo da API encerrado → "A API não está respondendo", banco "Desconhecido" (proxy 502), nas duas larguras |
+| Teclado e foco visível | Atendido | Tab até "Verificar novamente" (`:focus-visible`, anel visível) e Enter refez a verificação |
+| Sem rolagem horizontal em 400 px | Atendido | `scrollWidth` = 400 nos três estados |
+| Console sem erros inesperados | Atendido | Só os 503 e 502 de rede dos estados provocados |
+| CI verde e `./mvnw verify` limpo | Atendido | Ver as fases 2 e 3 (runs 37943341119 e 37945435515) |
+
 ## Verificações pendentes (não executadas)
 
 | Item | Status | Motivo e próximo passo |

@@ -1,7 +1,7 @@
 # Planejamento: migração do backend para Java 25 + Spring Boot 4.1.1
 
-- **Status:** aprovado pelo responsável em 2026-10-09 (decisões abaixo). Nada foi migrado ainda; a fase 0
-  (emenda ao prompt mestre e ADR 0009) vem primeiro.
+- **Status:** aprovado pelo responsável em 2026-10-09 (decisões abaixo) e **executado** no mesmo dia: fases 0 a 4
+  feitas, com notas de execução em cada fase; falta o merge dos PRs #5 e #6.
 
 **Decisões do responsável (2026-10-09), todas conforme a recomendação:**
 
@@ -283,6 +283,9 @@ pendente:** o contrato da etapa 2 vive na branch do PR #3 e recebe a troca num c
 2. Validação ponta a ponta como na Foundation: `docker compose up`, API, `npm run dev`, navegador em 1200 px e 400 px
    com banco ligado e desligado.
 3. `acceptance.md` atualizado com evidências; PR único `feat/backend-java` com a paridade descrita.
+
+**Execução (2026-10-09):** itens 1 e 2 feitos (evidências em [acceptance.md](acceptance.md), fase 4). O item 3 é
+o PR #6, com a base no PR #5 (fase 0); falta a revisão do responsável e o merge.
 
 Depois disso a etapa 2 recomeça em Java pelo tracer bullet já planejado (cadastro → confirmação → login →
 organização → site não verificado).

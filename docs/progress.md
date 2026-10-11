@@ -1,6 +1,6 @@
 # Progresso
 
-Última atualização: 2026-10-09. Roteiro: `docs/prompt-mestre.md`, seção 4. Cada etapa só começa com
+Última atualização: 2026-10-11 (consolidação documental; sem implementação da etapa 2). Roteiro: `docs/prompt-mestre.md`, seção 4. Cada etapa só começa com
 autorização explícita; o roteiro não autoriza implementar etapas futuras.
 
 ## Etapas
@@ -46,7 +46,7 @@ isolamento testado. Autorizada em 2026-10-09; nada implementado ainda.
 |---|---|
 | Provedor de identidade e sessão | Spring Security 7 + Spring Session JDBC + fluxos de conta próprios (revisado pelo ADR 0009, D6; era ASP.NET Core Identity), cookie `HttpOnly`/`Secure`/`SameSite=Strict` e CSRF (`csrf.spa()`) |
 | Organização e papéis | `Membership(user, organization, role)` com `Owner` e `Member`; várias organizações por usuário |
-| Banco e migrations | Schemas `identity` e `sites` no mesmo `DbContext`; PK UUIDv7; migrations aplicadas por comando explícito |
+| Banco e migrations | PostgreSQL, schemas `identity` e `sites` no mesmo `DataSource`; Spring Data JPA (Hibernate 7) + `JdbcClient`; PK UUIDv7 gerada pelo servidor; Flyway com SQL versionado (incluindo sessão), aplicado por comando explícito, sem criação de schema na partida |
 | Comprovação de controle do site | DNS TXT primeiro; sem HTTP à URL do usuário nesta etapa |
 | Dados pessoais | Só e-mail e hash de senha, removidos com a conta; STRIDE em `security/threat-model.md` (ameaças 20 a 37) |
 | Enumeração no cadastro | Confirmação de e-mail obrigatória; cadastro responde sempre 202 |

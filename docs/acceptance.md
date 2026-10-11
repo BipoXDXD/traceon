@@ -143,3 +143,11 @@ O frontend não mudou: o mesmo parse do contrato leu as respostas da API Java.
   `WebApplicationFactory`, que disputa com o entry point o host já descartado e às vezes devolve
   `ObjectDisposedException`. Agora usam host genérico e o entry point real na thread do teste (20/20 sob CPU saturada).
 - Não há afirmação de prontidão para produção.
+
+## Consolidação documental de Identity & Sites (2026-10-11)
+
+ADR 0008 passou a apresentar a decisão Java vigente antes do registro original em .NET. Conferidos
+ADR 0009 (D6/D7), contrato da etapa 2 e modelo de ameaças (T20–T37, R7–R10). Referências ativas a
+`DbContext` corrigidas no progresso e no prompt mestre; ADRs 0001 e 0002 explicitam os equivalentes Java.
+O contrato continua em rascunho e os testes de identidade, sessão e isolamento continuam planejados.
+Nenhuma implementação, migration ou decisão de produto foi alterada neste incremento.

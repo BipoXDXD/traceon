@@ -4,7 +4,26 @@
 - **Decisores:** responsável do projeto; implementação conduzida pelo assistente.
 - **Revisão (2026-10-09):** a arquitetura continua; a implementação passa a Java ([ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md)). Os quatro projetos .NET viram subpacotes `domain`/`application`/`infrastructure`/`api` dentro de cada módulo de um único módulo Maven; a regra da dependência sai do compilador e passa a `package-private` + ArchUnit + Spring Modulith. "Um `DbContext`, um schema por módulo" vira "um `DataSource`, um schema por módulo".
 
-## Contexto
+## Implementação vigente em Java (consolidada em 2026-10-11)
+
+A decisão de monólito modular e a regra da dependência continuam. A implementação vigente segue o
+[ADR 0009](0009-migracao-do-backend-para-java-e-spring-boot.md), D5 e D7:
+
+- Um módulo Maven, pacote por módulo de negócio, com subpacotes `domain`, `application`,
+  `infrastructure` e `api`; composição pelo Spring, implementações `package-private` quando possível.
+- Um `DataSource` e schema PostgreSQL por módulo; nenhum módulo usa entidades ou tabelas de outro.
+  Spring Data JPA (Hibernate 7) para aggregates, `JdbcClient` para leituras e Flyway com SQL versionado
+  aplicado por comando explícito. Uma transação por caso de uso, sem compartilhar `EntityManager`
+  entre operações paralelas.
+- ArchUnit e Spring Modulith verificam dependências e fronteiras; não se criam pacotes vazios.
+- Worker será um processo separado reaproveitando o código, sem banco próprio, quando autorizado.
+
+## Registro original em .NET (histórico técnico)
+
+O texto abaixo preserva a decisão original. Projetos .NET, `DbContext`, APIs EF e verificações pelo
+compilador foram substituídos pelos equivalentes Java acima; não orientam a implementação atual.
+
+### Contexto
 
 O Traceon é um SaaS de monitoramento de integridade de aplicações web, com sete módulos planejados
 (Identity & Organizations, Sites, Monitoring, Integrity, Findings, Notifications, Audit). Hoje existe um
@@ -20,7 +39,7 @@ Alternativas consideradas:
 | **B. Clean Architecture com 4 projetos (Domain, Application, Infrastructure, Api) e módulos como pastas** | Regra da dependência imposta pelo compilador; domínio testável sem banco; custo baixo (4 projetos, não 4 × 7) | Um pouco mais de cerimônia; risco de camadas vazias e pass-through se aplicada de forma literal |
 | **C. Projetos por módulo × camada (28 projetos)** ou microservices | Fronteiras físicas fortes entre módulos | Cerimônia desproporcional para dev solo; distribuição sem driver medido |
 
-## Decisão
+### Decisão
 
 Adotamos a **opção B**: monólito modular com Clean Architecture **pragmática**.
 
@@ -37,14 +56,14 @@ Adotamos a **opção B**: monólito modular com Clean Architecture **pragmática
 - **Pragmática** quer dizer: sem input/output ports, presenters e modelos por camada enquanto não pagarem
   o custo. Leitura simples pode projetar direto do `DbContext` para DTO dentro do serviço de aplicação.
 
-## Consequências
+### Consequências
 
 - Domínio e casos de uso testáveis sem banco, HTTP ou framework.
 - Na Foundation, `Domain` e `Application` ficam **sem código**: não há regra de negócio e o prompt proíbe
   inventar entidades. Eles existem para que a primeira feature real já nasça na fronteira certa.
 - Custo: 4 projetos e o cuidado de não criar interfaces 1:1 nem serviços pass-through (ver ADR 0002).
 
-## Compliance
+### Compliance
 
 - `<ProjectReference>` só aponta para dentro (o compilador barra ciclos).
 - Testes de arquitetura em `Traceon.UnitTests` (lendo os `.csproj`) falham se `Domain` referenciar qualquer
@@ -52,7 +71,7 @@ Adotamos a **opção B**: monólito modular com Clean Architecture **pragmática
   `Infrastructure` depender de ASP.NET Core ou da `Api`, ou se algum projeto referenciar a `Api`.
 - O uso de tipos da `Infrastructure` pela `Api` é barrado pelo compilador: esses tipos são `internal`.
 
-## Referências
+### Referências
 
 *Clean Architecture* (Martin; fora dos 20 livros do prompt, mas na biblioteca do responsável), caps. 22 (regra da dependência) e 24–25 (boundaries parciais);
 *Fundamentals of Software Architecture*, 2ª ed., caps. 9–11 (monólito modular, particionamento por domínio);

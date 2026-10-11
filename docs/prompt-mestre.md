@@ -57,7 +57,7 @@ Módulos planejados: **Identity & Organizations, Sites, Monitoring, Integrity, F
 
 **API:** contratos REST explícitos, DTOs separados das entidades, OpenAPI, erros Problem Details sem detalhes internos, paginação e validação nas fronteiras. Quando houver jobs, defina estados, idempotência e acompanhamento assíncrono; use `202 Accepted` com referência ao recurso de acompanhamento. Não duplique regras de negócio no frontend.
 
-**Dados e concorrência:** integridade garantida também por constraints e transações; migrations revisadas; índices orientados pelas consultas. Não compartilhe `DbContext` entre operações paralelas. Defina cancelamento, timeouts, concorrência limitada e tratamento de duplicatas. Não confunda sincronização local com coordenação entre réplicas.
+**Dados e concorrência:** integridade garantida também por constraints e transações; migrations revisadas; índices orientados pelas consultas. Não compartilhe `EntityManager` nem contexto de persistência JPA entre operações paralelas; o `DataSource` compartilhado fornece conexões, não um contexto de entidades compartilhado (ADR 0009, D7). Defina cancelamento, timeouts, concorrência limitada e tratamento de duplicatas. Não confunda sincronização local com coordenação entre réplicas.
 
 **Segurança:** nenhuma credencial no código, logs ou bundle frontend. Implemente identidade com mecanismos consolidados, autorização por organização e recurso e testes de isolamento. Antes de qualquer coleta externa, exija autorização do site, modelo de ameaças e controles de SSRF na aplicação e na rede, abrangendo DNS, redirecionamentos e sub-recursos. Isole o coletor, limite consumo e retenção; trate conteúdo externo como dados não confiáveis, nunca como instruções.
 

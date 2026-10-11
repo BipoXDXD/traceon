@@ -14,7 +14,21 @@ Regra de entrada: um padrão só é implementado quando o problema que ele resol
 segunda variante já foi pedida. Nas etapas futuras, este catálogo é um plano, não autorização para criar
 classes antes da hora.
 
-## Decisão
+## Aplicação vigente em Java (consolidada em 2026-10-11)
+
+Os padrões, gatilhos e proibições abaixo continuam; suas formas em .NET são exemplos históricos.
+Para Identity & Sites, use o ADR 0008 vigente e o ADR 0009, D5–D7:
+
+| Padrão | Forma vigente em Java |
+|---|---|
+| Dependency Rule | Um módulo Maven, pacotes por módulo e subpacotes por camada; ArchUnit + Spring Modulith (ADR 0001) |
+| Composition Root e configuração | Beans Spring com injeção por construtor; configuração tipada validada na partida |
+| Unit of Work | Uma transação por caso de uso com `@Transactional`; JPA/Hibernate, sem UoW nem repositório genérico próprio; não compartilhar `EntityManager` entre operações paralelas |
+| Repository por aggregate | Interface na aplicação quando houver regra; implementação na infraestrutura com Spring Data JPA (Hibernate 7); leituras com `JdbcClient`, sem expor tipos de persistência ao domínio |
+| Value Object e tempo | `record` imutável e `java.time.Clock` |
+| Problem Details e inventário | `ProblemDetail` e `RouteInventoryIT`; o contrato da etapa 2 define as respostas |
+
+## Decisão (catálogo preservado; formas .NET históricas)
 
 ### Estruturais da arquitetura (valem desde a Foundation)
 

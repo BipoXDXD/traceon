@@ -21,7 +21,7 @@
         <!-- Fora do BOM do Spring Boot: versões exatas, com pelo menos 2 semanas de publicação (ADR 0003) -->
         <archunit.version>1.5.1</archunit.version>
         <palantir-java-format.version>2.99.0</palantir-java-format.version>
-        <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc-openapi.version>3.1.1</springdoc-openapi.version>
         <!-- A mesma que o springdoc 3.1.1 traz; sobe junto com ele -->
